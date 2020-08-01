@@ -32,5 +32,5 @@ function testtiles()
     spr(tiles[i], j%8*8, flr(j/8)*8, 1, 1, flipx, flipy)
   end
   //draw the character
-  spr(1, 32, 32)
+--   spr(1, 32, 32)
 end
