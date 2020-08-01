@@ -190,6 +190,7 @@ end
 function _draw()
   cls()
   map(0,0,0,0,64,64) -- draw level
+  vectortests()
   player:draw()
-  print("hello pico8", 0, 0)
+  --print("hello pico8", 0, 0)
 end
