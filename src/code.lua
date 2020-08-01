@@ -88,7 +88,7 @@ c_hold = c_object:new({
 	name = "hold",
 	sprites = {
 		default = {
-			number = 19,
+			number = 33,
 			hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
 		}
 	}
