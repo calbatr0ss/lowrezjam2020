@@ -253,6 +253,7 @@ function _draw()
   cls()
   -- testtiles()
 	map(0,0,0,0,64,64) -- draw level
+  -- vectortests()
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
 	-- print(#actors)
