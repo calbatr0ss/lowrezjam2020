@@ -1,5 +1,16 @@
-player=nil
-g_force=0.2
+-- yolosolo
+-- lowrezjam 2020
+
+-- flag reference
+  -- sprite
+    -- 1: solid
+  -- sound effects
+  -- music
+
+player = nil
+g_force = 0.2
+display = 64
+input= { l = 0, r = 1, u = 2, d = 3, o = 4, x = 5 }
 -- classes table
 classes = {}
 
@@ -79,13 +90,13 @@ c_entity = c_object:new({
 		if not self.grounded or self.jumping then
 			self.dy += g_force
 			-- todo: pick good grav bounds -2,5
-			-- todo: hat clips through ground sometimes because it is 5 height
+			-- todo: stuff clips through ground sometimes because it is 5 height
 			self.dy = mid(-999, self.dy, 5) -- clamp
 		else self.dy = 0 end
 		-- out of bounds
-		if (self.y / 8) > level.h then
-			self:die()
-		end
+		-- if (self.y / 8) > level.h then
+		-- 	self:die()
+		-- end
 		c_object.move(self)
 	end,
 	die = function(self)
@@ -108,17 +119,40 @@ c_player = c_entity:new({
 	},
 	name="player",
 	spd=0.5,
-	jump_force=3,
-	topspd=1, -- all player speeds must be integers to avoid camera jitter
+	jump_force=2,
+	topspd=2, -- all player speeds must be integers to avoid camera jitter
 	jumped_at=0,
 	num_jumps=0,
+	max_jumps=1,
 	jumping=false,
 	can_jump=true,
 	jump_delay=0.5,
 	dead=false,
-	hat=nil,
 	input=function(self)
-	  -- get input here
+	  if btn(input.r) then
+	    self.dx = mid(-self.topspd, self.dx + self.spd, self.topspd)
+	  elseif btn(input.l) then
+	    self.dx = mid(-self.topspd, self.dx - self.spd, self.topspd)
+	  else -- decay
+	    self.dx *= 0.5
+	    if abs(self.dx) < 0.2 then self.dx = 0 end
+	  end
+
+	  -- jump
+	  if self.grounded then self.num_jumps = 0
+	  elseif self.num_jumps == 0 then self.num_jumps = 1 end -- first jump must be off ground
+
+	  local jump_window = time() - self.jumped_at > self.jump_delay
+	  self.can_jump = self.num_jumps < self.max_jumps and jump_window
+	  if not jump_window then self.jumping = false end
+
+	  if self.can_jump and btn(input.o) then
+	    self.jumped_at = time()
+	    self.num_jumps += 1
+	    self.jumping = true
+	    self.dy = 0 -- reset dy before using jump_force
+	    self.dy -= self.jump_force
+	  end
 	end,
 	move=function(self)
 		self:input()
@@ -148,12 +182,14 @@ add(classes, c_player:new({}))
 function _init()
   -- enable 64 bit mode
   poke(0x5f2c,3)
-  player=c_player:new({})
+  player=c_player:new({x=0, y=0})
 end
 function _update()
-  player:input()
+  player:move()
 end
 function _draw()
   cls()
+  map(0,0,0,0,64,64) -- draw level
+  player:draw()
   print("hello pico8", 0, 0)
 end
