@@ -73,7 +73,7 @@ add(classes,c_entity:new({}))
 c_player=c_entity:new({
 sprites={
 default={
-number=1,			hitbox={ ox=1,oy=3,w=6,h=5 }
+number=1,			hitbox={ ox=0,oy=0,w=8,h=8 }
 },		jump={
 number=18,			hitbox={ ox=1,oy=3,w=6,h=5 }
 }
@@ -166,8 +166,7 @@ cls()
 map(0,0,0,0,64,64) 
 foreach(actors,function(a) a:draw() end)
 player:draw()
-debug=player.jumping
-print(debug)
+if debug then print(debug) end
 debug=nil
 end
 function right_tile_collide(obj)
