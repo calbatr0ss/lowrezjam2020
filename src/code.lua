@@ -84,11 +84,12 @@ c_object = c_sprite:new({
 })
 add(classes, c_object:new({}))
 
+-- hold, inherits from object
 c_hold = c_object:new({
 	name = "hold",
 	sprites = {
 		default = {
-			number = 50,
+			number = 33,
 			hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
 		}
 	}
@@ -125,24 +126,24 @@ c_player = c_entity:new({
 	sprites = {
 		default = {
 			number = 1,
-			hitbox={ ox = 1, oy = 3, w = 6, h = 5 }
+			hitbox={ ox = 0, oy = 0, w = 8, h = 8 }
 		},
 		jump = {
 			number = 18,
 			hitbox = { ox=1, oy = 3, w = 6, h = 5 }
 		}
 	},
-	name="player",
-	spd=0.5,
-	jump_force=2,
-	topspd=2, -- all player speeds must be integers to avoid camera jitter
-	jumped_at=0,
-	num_jumps=0,
-	max_jumps=1,
-	jumping=false,
-	can_jump=true,
-	jump_delay=0.5,
-	dead=false,
+	name = "player",
+	spd = 0.5,
+	jump_force = 2,
+	topspd = 2, -- all player speeds must be integers to avoid camera jitter
+	jumped_at = 0,
+	num_jumps = 0,
+	max_jumps = 1,
+	jumping = false,
+	can_jump = true,
+	jump_delay = 0.5,
+	dead = false,
 	on_hold = false,
 	input=function(self)
 		-- left/right movement
@@ -156,8 +157,7 @@ c_player = c_entity:new({
 		end
 
 		-- jump
-		if self.grounded then self.num_jumps = 0
-		elseif self.num_jumps == 0 then self.num_jumps = 1 end -- first jump must be off ground
+		if self.grounded then self.num_jumps = 0 end
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
 		self.can_jump = self.num_jumps < self.max_jumps and jump_window
@@ -173,11 +173,11 @@ c_player = c_entity:new({
 
 		-- hold
 		if btn(input.x) and self.on_hold then
-			-- freeze their position
+			-- freeze position
 			self.dx = 0
 			self.dy = 0
 			-- reset jump
-			self.grounded = true
+			self.num_jumps = 0
 		end
 	end,
 	move = function(self)
@@ -188,7 +188,7 @@ c_player = c_entity:new({
 	collide = function(self, actor)
 		if c_entity.collide(self, actor) then
 			if actor.name == "hold" then
-				debug=actor.name
+				-- debug=actor.name
 				self.on_hold = true
 			end
 		end 
@@ -234,13 +234,13 @@ end
 
 function _init()
 	poke(0x5f2c,3) -- enable 64 bit mode
-  palt(0, false)
-  palt(13, true)
-	load_level()
-	player=c_player:new({x=0, y=0})
+	-- set lavender to the transparent color
+	palt(0, false)
+	palt(13, true)
+	init_screen()
 end
 
-function _update()
+function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
 	foreach(actors, function(a) 
 		-- a:move()
@@ -249,14 +249,21 @@ function _update()
 	player:move()
 end
 
-function _draw()
-  cls()
-  -- testtiles()
+function draw_game()
+	cls()
+	-- testtiles()
 	map(0,0,0,0,64,64) -- draw level
-  -- vectortests()
+	-- vectortests()
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
 	-- print(#actors)
-	print(debug)
+	if debug then print(debug) end
 	debug=nil
+end
+
+function init_game()
+	_update = update_game
+	_draw = draw_game
+	load_level()
+	player=c_player:new({x=0, y=0})
 end
