@@ -252,6 +252,7 @@ end
 function draw_game()
 	cls()
 	-- testtiles()
+  -- testanimation()
 	map(0,0,0,0,64,64) -- draw level
 	-- vectortests()
 	foreach(actors, function(a) a:draw() end)
