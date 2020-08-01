@@ -234,13 +234,13 @@ end
 
 function _init()
 	poke(0x5f2c,3) -- enable 64 bit mode
+	-- set lavender to the transparent color
 	palt(0, false)
 	palt(13, true)
-	load_level()
-	player=c_player:new({x=0, y=0})
+	init_screen()
 end
 
-function _update()
+function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
 	foreach(actors, function(a) 
 		-- a:move()
@@ -249,7 +249,7 @@ function _update()
 	player:move()
 end
 
-function _draw()
+function draw_game()
 	cls()
 	-- testtiles()
 	map(0,0,0,0,64,64) -- draw level
@@ -259,4 +259,11 @@ function _draw()
 	-- print(#actors)
 	if debug then print(debug) end
 	debug=nil
+end
+
+function init_game()
+	_update = update_game
+	_draw = draw_game
+	load_level()
+	player=c_player:new({x=0, y=0})
 end
