@@ -234,9 +234,9 @@ end
 
 function _init()
 	poke(0x5f2c,3) -- enable 64 bit mode
-
+  palt(0, false)
+  palt(13, true)
 	load_level()
-
 	player=c_player:new({x=0, y=0})
 end
 
@@ -250,7 +250,8 @@ function _update()
 end
 
 function _draw()
-	cls()
+  cls()
+  -- testtiles()
 	map(0,0,0,0,64,64) -- draw level
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
