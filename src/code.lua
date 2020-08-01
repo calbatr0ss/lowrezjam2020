@@ -148,6 +148,8 @@ add(classes, c_player:new({}))
 function _init()
   -- enable 64 bit mode
   poke(0x5f2c,3)
+  palt(0, false)
+  palt(13, true)
   player=c_player:new({})
 end
 function _update()
@@ -155,5 +157,6 @@ function _update()
 end
 function _draw()
   cls()
+  testtiles()
   print("hello pico8", 0, 0)
 end
