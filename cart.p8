@@ -3,31 +3,28 @@ version 29
 __lua__
 player=nil
 g_force=0.2
-display=64
-input={ l=0,r=1,u=2,d=3,o=4,x=5 }
 classes={}
-actors={}
 c_sprite={
-sprite=nil,	sprites={
+sprite=nil,sprites={
 default={
-number=0,			hitbox={ ox=0,oy=0,w=8,h=8 }
+number=0, hitbox={ ox=0,oy=0,w=8,h=8 }
 }
-},	flip=false,	name="sprite",	parent=nil,	state="rest",	x=0,	y=0,	dx=0,	dy=0,	new=function(self,o)
+},flip=false,name="sprite",parent=nil,state="rest",x=0,y=0,dx=0,dy=0,new=function(self,o)
 local o=o or {}
 setmetatable(o,self)
 self.__index=self
 self.sprite=self.sprites.default
 return o
-end,	move=function(self)
+end,move=function(self)
 self.x+=self.dx
 self.y+=self.dy
-end,	draw=function(self)
+end,draw=function(self)
 spr(self.sprite.number,self.x,self.y,1,1,self.flip)
 end
 }
 add(classes,c_sprite:new({}))
 c_object=c_sprite:new({
-name="object",	grounded=false,	hp=1,	move=function(self)
+name="object", grounded=false, hp=1, move=function(self)
 self.y+=self.dy
 while ceil_tile_collide(self) do self.y+=1 end
 while floor_tile_collide(self) do self.y-=1 end
@@ -39,31 +36,26 @@ while right_tile_collide(self) do self.x-=1 end
 while left_tile_collide(self) do self.x+=1 end
 while calc_edges(self).l<0 do self.x+=1 end
 self.y=flr(self.y) 
-end,	collide=function(self,other)
+end, collide=function(self,other)
 local personal_space,their_space=calc_edges(self),calc_edges(other)
 return personal_space.b>their_space.t and
 personal_space.t<their_space.b and
 personal_space.r>their_space.l and
 personal_space.l<their_space.r
-end,	damage=function(self,n)
+end, damage=function(self,n)
 self.hp-=n
 end
 })
 add(classes,c_object:new({}))
-c_hold=c_object:new({
-name="hold",	sprites={
-default={
-number=33,			hitbox={ ox=0,oy=0,w=8,h=8 }
-}
-}
-})
-add(classes,c_hold:new({}))
 c_entity=c_object:new({
 name="entity",	spd=1,	topspd=1,	move=function(self)
 if not self.grounded or self.jumping then
 self.dy+=g_force
 self.dy=mid(-999,self.dy,5) 
 else self.dy=0 end
+if (self.y/8)>level.h then
+self:die()
+end
 c_object.move(self)
 end,	die=function(self)
 del(actors,self)
@@ -73,46 +65,16 @@ add(classes,c_entity:new({}))
 c_player=c_entity:new({
 sprites={
 default={
-number=1,			hitbox={ ox=0,oy=0,w=8,h=8 }
+number=1,			hitbox={ ox=1,oy=3,w=6,h=5 }
 },		jump={
 number=18,			hitbox={ ox=1,oy=3,w=6,h=5 }
 }
-},	name="player",	spd=0.5,	jump_force=2,	topspd=2,
-jumped_at=0,	num_jumps=0,	max_jumps=1,	jumping=false,	can_jump=true,	jump_delay=0.5,	dead=false,	on_hold=false,	input=function(self)
-if btn(input.r) then
-self.dx=mid(-self.topspd,self.dx+self.spd,self.topspd)
-elseif btn(input.l) then
-self.dx=mid(-self.topspd,self.dx-self.spd,self.topspd)
-else 
-self.dx*=0.5
-if abs(self.dx)<0.2 then self.dx=0 end
-end
-if self.grounded then self.num_jumps=0 end
-local jump_window=time()-self.jumped_at>self.jump_delay
-self.can_jump=self.num_jumps<self.max_jumps and jump_window
-if not jump_window then self.jumping=false end
-if self.can_jump and btn(input.o) then
-self.jumped_at=time()
-self.num_jumps+=1
-self.jumping=true
-self.dy=0 
-self.dy-=self.jump_force
-end
-if btn(input.x) and self.on_hold then
-self.dx=0
-self.dy=0
-self.num_jumps=0
-end
+},	name="player",	spd=0.5,	jump_force=3,	topspd=1,
+jumped_at=0,	num_jumps=0,	jumping=false,	can_jump=true,	jump_delay=0.5,	dead=false,	hat=nil,	input=function(self)
 end,	move=function(self)
 self:input()
 self:anim()
 c_entity.move(self)
-end,	collide=function(self,actor)
-if c_entity.collide(self,actor) then
-if actor.name=="hold" then
-self.on_hold=true
-end
-end 
 end,	die=function(self)
 sfx(0)
 self.dead=true
@@ -129,45 +91,20 @@ end
 end
 })
 add(classes,c_player:new({}))
-function load_level()
-for x=0,display do
-for y=0,display do
-local t=mget(x,y)
-foreach(classes,function(c)
-if c.sprite.number==t and c.sprite.number ~=0 then
-load_obj(c,x,y)
-mset(x,y,0)
-end
-end)
-end
-end
-end
-function load_obj(o,x,y)
-if o.name=="hold" then
-add(actors,c_hold:new({ x=x*8,y=y*8 }))
-end
-end
 function _init()
-poke(0x5f2c,3) 
+poke(0x5f2c,3)
 palt(0,false)
 palt(13,true)
-load_level()
-player=c_player:new({x=0,y=0})
+player=c_player:new({})
 end
 function _update()
-player.on_hold=false 
-foreach(actors,function(a) 
-player:collide(a)
-end)
-player:move()
+player:input()
 end
 function _draw()
 cls()
-map(0,0,0,0,64,64) 
-foreach(actors,function(a) a:draw() end)
-player:draw()
-if debug then print(debug) end
-debug=nil
+testtiles()
+testanimation()
+print("hello pico8",0,0)
 end
 function right_tile_collide(obj)
 local edges=calc_edges(obj)
@@ -213,6 +150,19 @@ end
 function is_flag_at(x,y,f)
 return fget(mget(x,y),f)
 end
+function testanimation()
+local anim1={2,3,4}
+local anim2={5,6,7}
+local anim3={8,9,10}
+local interval=0.066
+print(flr(time()/interval % 3)+1,0,20,7)
+spr(1,20,32)
+spr(anim1[flr(time()/interval % 3)+1],32,32)
+spr(5,20,42)
+spr(anim2[flr(time()/interval % 3)+1],32,42)
+spr(8,20,52)
+spr(anim3[flr(time()/interval % 3)+1],32,52)
+end
 i=1
 randomx=false
 randomy=false
@@ -246,76 +196,16 @@ if (flr(rnd(2))==1) flipy=true
 end
 spr(tiles[i],j%8*8,flr(j/8)*8,1,1,flipx,flipy)
 end
-//draw the character
-end
-function vec2(x,y)
-local v={
-x=x or 0, y=y or 0
-}
-setmetatable(v,vec2_meta)
-return v
-end
-function vec2conv(a)
-return vec2(a.x,a.y)
-end
-vec2_meta={
-__add=function(a,b)
-return vec2(a.x+b.x,a.y+b.y)
-end, __sub=function(a,b)
-return vec2(a.x-b.x,a.y-b.y)
-end, __div=function(a,b)
-return vec2(a.x/b,a.y/b)
-end, __mul=function(a,b)
-return vec2(a.x*b,a.y*b)
-end
-}
-function vmult2(v1,v2)
-local vec=vec2(0,0,0)
-vec.x=v1.x*v2.x
-vec.y=v1.y*v2.y
-return vec
-end
-function vdot(v1,v2)
-return (v1.x*v2.x)+(v1.y*v2.y)
-end
-function vcross(v1,v2)
-return 0
-end
-function vmag(v)
-local m=max(abs(v.x),abs(v.y))
-local vec={x=0,y=0}
-vec.x=v.x/m
-vec.y=v.y/m
-return sqrt((vec.x*vec.x)+(vec.y*vec.y))*m
-end
-function vnorm(vec)
-local v=vec2()
-v=vec/vmag(vec)
-return v
-end
-function vectortests()
-local v1=vec2(2,2)
-local v1norm=vnorm(v1)
-local v1mag=vmag(v1)
-local v2=vec2(-9,3)
-local adds=v1+v2
-local scale=v1*4
-line(32,32,32+scale.x,32+scale.y,7)
-line(40,40,40+adds.x,40+adds.y,6)
-line(0,0,v1.x,v1.y,5)
-line(32,0,32+v2.x,v2.y,4)
-print(v1mag,50,50,7)
-line(v1norm.x,v1norm.y,0,0,3)
 end
 __gfx__
-00000000dd000ddd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000d0eee0dd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700d0eeee0d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000d0e7e70d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000770000eeeeee00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700d444440d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000903303300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000dd00d00d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000dd000ddddd000ddddd000ddddd000dddd0000dddd0000dddd0000dddd0dddd0ddd0d0dddd00dd0dd0000000000000000000000000000000000000000
+00000000d0eee0ddd0eee0ddd0eee0ddd0eee0dd0eee0ddd0eee0d0d0eee00dd0e0000e0d000e0ddd0e00e0d0000000000000000000000000000000000000000
+00700700d0eeee0dd0eeee0dd0eeee0dd0eeee0d0eeee0dd0eeee0e00eeeee0dd0eeeee0d0eeee0dd0eeee0d0000000000000000000000000000000000000000
+00077000d0e7e70dd0e7e70dd0e7e70dd0e7e70d0eeeee0d0eeee00d0eeee0e0d0eeee0dd0eeee0dd0eeee0d0000000000000000000000000000000000000000
+000770000eeeeee00eeeeee00eeeeee00eeeeee00eeee0dd0eeeee0d0eeee00dd0eeee0dd0eeee0dd0eeee0d0000000000000000000000000000000000000000
+00700700d444440d3444440dd4444430d444440d444494dd444494dd444494ddd0eeee0dd0eeee0dd0eeee0d0000000000000000000000000000000000000000
+0000000090330330030330dd9033030d933003300330930d0330930d0330930dd4444930d4444930d44449300000000000000000000000000000000000000000
+00000000dd00d00dd0d00ddddd00d0ddd00dd00dd00d00ddd00d00ddd00d00ddd000d90dd000d90dd000d90d0000000000000000000000000000000000000000
 000000009444444a5666666657666665ffffffffffffffff44444444999999993bb33b3300000000000000000000000000000000000000000000000000000000
 00000000494444a96666666665766657ffffffffffffffff44444444999999993443443400000000000000000000000000000000000000000000000000000000
 0000000044944a946666666666576576ffffffffffffffff44444a44999999994444444400000000000000000000000000000000000000000000000000000000
