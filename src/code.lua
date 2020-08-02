@@ -226,12 +226,15 @@ c_player = c_entity:new({
 	can_jump = true,
 	jump_delay = 0.5,
 	jump_cost = 25,
+	jump_pressed = false,
+	jump_newly_pressed = false,
 	dead = false,
 	on_hold = false,
+	holding = false,
 	stamina = 100,
 	max_stamina = 100,
-	stamina_regen_rate = 0.25,
-	regen_cor=nil,
+	stamina_regen_rate = 2,
+	stamina_regen_cor = nil,
 	input=function(self)
 		-- left/right movement
 		if btn(input.r) then
@@ -246,8 +249,23 @@ c_player = c_entity:new({
 		-- jump
 		if self.grounded then self.num_jumps = 0 end
 
+		-- only jump on a new button press
+		if btn(input.o) then
+			if not self.jump_pressed then
+				self.jump_newly_pressed = true
+			else
+				self.jump_newly_pressed = false
+			end
+			self.jump_pressed = true
+		else
+			self.jump_pressed = false
+			self.jump_newly_pressed = false
+		end
+
 		local jump_window = time() - self.jumped_at > self.jump_delay
-		self.can_jump = self.num_jumps < self.max_jumps and jump_window and self.stamina > 0 -- jump cost
+		self.can_jump = self.num_jumps < self.max_jumps and
+			jump_window and self.stamina >= self.jump_cost and 
+			self.jump_newly_pressed
 		if not jump_window then self.jumping = false end
 
 		if self.can_jump and btn(input.o) then
@@ -261,16 +279,21 @@ c_player = c_entity:new({
 
 		-- hold
 		if btn(input.x) and self.on_hold then
+			self.holding = true
 			-- freeze position
 			self.v.x = 0
 			self.v.y = 0
 			-- reset jump
 			self.num_jumps = 0
+		else
+			self.holding = false
 		end
 	end,
 	regen_stamina = function(self)
 		while self.stamina < self.max_stamina do
-			self.stamina += self.stamina_regen_rate
+			if self.grounded then
+				self.stamina += self.stamina_regen_rate
+			end
 			yield()
 		end
 	end,
@@ -278,12 +301,12 @@ c_player = c_entity:new({
 		self:input()
 		-- stamina
 		if self.stamina < self.max_stamina then
-			self.regen_cor = cocreate(self.regen_stamina)
+			self.stamina_regen_cor = cocreate(self.regen_stamina)
 		end
-		if self.regen_cor and costatus(self.regen_cor) != "dead" then
-			coresume(self.regen_cor, self)
+		if self.stamina_regen_cor and costatus(self.stamina_regen_cor) != "dead" then
+			coresume(self.stamina_regen_cor, self)
 		else
-			self.regen_cor = nil
+			self.stamina_regen_cor = nil
 		end
 		self:anim()
 		c_entity.move(self)
@@ -373,13 +396,21 @@ function init_game()
 	_draw = draw_game
 	load_level()
 --	player=c_player:new({x=0, y=0})
-	player=c_player:new({ p = vec2(0, 0) })
+	player=c_player:new({ p = vec2(0, display-(8*2)) })
 end
 
 function draw_hud()
+	-- stamina bar
 	rectfill(0, 0, 26, 2, 1)
 	if player.stamina > 0 then
 		rectfill(1, 1, mid(1, (player.stamina / 4), 25), 1, 11)
 	end
 
+	-- grip icon
+	rectfill(display-8, 0, display, 7, 1)
+	if player.holding then
+		spr(50, display-8, 0)
+	else
+		spr(49, display-8, 0)
+	end
 end
