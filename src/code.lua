@@ -187,7 +187,6 @@ c_entity = c_object:new({
 		if not self.grounded or self.jumping then
 			self.v.y += g_force
 			-- todo: pick good grav bounds -2,5
-			-- todo: stuff clips through ground sometimes because it is 5 height
 			self.v.y = mid(-999, self.v.y, 5) -- clamp
 		else self.v.y = 0 end
 		-- out of bounds
@@ -226,8 +225,13 @@ c_player = c_entity:new({
 	jumping = false,
 	can_jump = true,
 	jump_delay = 0.5,
+	jump_cost = 25,
 	dead = false,
 	on_hold = false,
+	stamina = 100,
+	max_stamina = 100,
+	stamina_regen_rate = 0.25,
+	regen_cor=nil,
 	input=function(self)
 		-- left/right movement
 		if btn(input.r) then
@@ -243,7 +247,7 @@ c_player = c_entity:new({
 		if self.grounded then self.num_jumps = 0 end
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
-		self.can_jump = self.num_jumps < self.max_jumps and jump_window
+		self.can_jump = self.num_jumps < self.max_jumps and jump_window and self.stamina > 0
 		if not jump_window then self.jumping = false end
 
 		if self.can_jump and btn(input.o) then
@@ -252,6 +256,7 @@ c_player = c_entity:new({
 			self.jumping = true
 			self.v.y = 0 -- reset dy before using jump_force
 			self.v.y -= self.jump_force
+			self.stamina -= self.jump_cost
 		end
 
 		-- hold
@@ -263,8 +268,23 @@ c_player = c_entity:new({
 			self.num_jumps = 0
 		end
 	end,
+	regen_stamina = function(self)
+		while self.stamina < self.max_stamina do
+			self.stamina += self.stamina_regen_rate
+			yield()
+		end
+	end,
 	move = function(self)
 		self:input()
+		-- stamina
+		if self.stamina < self.max_stamina then
+			self.regen_cor = cocreate(self.regen_stamina)
+		end
+		if self.regen_cor and costatus(self.regen_cor) != "dead" then
+			coresume(self.regen_cor, self)
+		else
+			self.regen_cor = nil
+		end
 		self:anim()
 		c_entity.move(self)
 	end,
@@ -341,7 +361,9 @@ function draw_game()
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
-	-- print(#actors)
+
+	draw_hud()
+
 	if debug then print(debug) end
 	debug=nil
 end
@@ -351,5 +373,13 @@ function init_game()
 	_draw = draw_game
 	load_level()
 --	player=c_player:new({x=0, y=0})
-	player=c_player:new({p = vec2(0, 0)})
+	player=c_player:new({ p = vec2(0, 0) })
+end
+
+function draw_hud()
+	rectfill(0, 0, 26, 2, 1)
+	if player.stamina > 0 then
+		rectfill(1, 1, mid(1, (player.stamina / 4), 25), 1, 11)
+	end
+
 end
