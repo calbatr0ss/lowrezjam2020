@@ -24,13 +24,20 @@ c_sprite = {
 	sprites = {
 		default = {
 			number = 0,
-			hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			--hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			hitbox = {o = vec2(0, 0), w = 8, h = 8}
 		}
 	},
 	flip = false,
 	name = "sprite",
 	parent = nil,
 	state = "rest",
+	--[[
+	x = 0
+	y = 0
+	dx = 0
+	dy = 0
+	--]]
 	p = vec2(0, 0),
 	v = vec2(0, 0),
 	new = function(self, o)
@@ -87,7 +94,8 @@ c_hold = c_object:new({
 	sprites = {
 		default = {
 			number = 33,
-			hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			--hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			hitbox = {o = vec2(0, 0), w = 8, h = 8 }
 		}
 	}
 })
@@ -123,11 +131,13 @@ c_player = c_entity:new({
 	sprites = {
 		default = {
 			number = 1,
-			hitbox={ ox = 0, oy = 0, w = 8, h = 8 }
+			--hitbox={ ox = 0, oy = 0, w = 8, h = 8 }
+			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
 		},
 		jump = {
 			number = 18,
-			hitbox = { ox=1, oy = 3, w = 6, h = 5 }
+			--hitbox = { ox=1, oy = 3, w = 6, h = 5 }
+			hitbox={ o = vec2(1, 3), w = 6, h = 5 }
 		}
 	},
 	name = "player",
@@ -225,7 +235,8 @@ end
 
 function load_obj(o, x, y)
 	if o.name == "hold" then
-		add(actors, c_hold:new({ x = x * 8, y = y * 8 }))
+		--add(actors, c_hold:new({ x = x * 8, y = y * 8}))
+		add(actors, c_hold:new({p = vec2(x * 8, y * 8)}))
 	end
 end
 
@@ -251,7 +262,7 @@ function draw_game()
 	-- testtiles()
   -- testanimation()
 	map(0,0,0,0,64,64) -- draw level
-	-- vectortests()
+	--vectortests()
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
 	-- print(#actors)
@@ -263,5 +274,6 @@ function init_game()
 	_update = update_game
 	_draw = draw_game
 	load_level()
-	player=c_player:new({x=0, y=0})
+--	player=c_player:new({x=0, y=0})
+	player=c_player:new({p = vec2(0, 0)})
 end
