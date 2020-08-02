@@ -247,7 +247,7 @@ c_player = c_entity:new({
 		if self.grounded then self.num_jumps = 0 end
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
-		self.can_jump = self.num_jumps < self.max_jumps and jump_window and self.stamina > 0
+		self.can_jump = self.num_jumps < self.max_jumps and jump_window and self.stamina > 0 -- jump cost
 		if not jump_window then self.jumping = false end
 
 		if self.can_jump and btn(input.o) then
