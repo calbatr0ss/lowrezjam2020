@@ -252,7 +252,6 @@ c_entity = c_object:new({
 		if not self.grounded or self.jumping then
 			self.v.y += g_force
 			-- todo: pick good grav bounds -2,5
-			-- todo: stuff clips through ground sometimes because it is 5 height
 			self.v.y = mid(-999, self.v.y, 5) -- clamp
 		else self.v.y = 0 end
 		-- out of bounds
@@ -425,8 +424,16 @@ c_player = c_entity:new({
 	jumping = false,
 	can_jump = true,
 	jump_delay = 0.5,
+	jump_cost = 25,
+	jump_pressed = false,
+	jump_newly_pressed = false,
 	dead = false,
 	on_hold = false,
+	holding = false,
+	stamina = 100,
+	max_stamina = 100,
+	stamina_regen_rate = 2,
+	stamina_regen_cor = nil,
 	input=function(self)
 		-- left/right movement
 		if btn(input.r) then
@@ -441,8 +448,23 @@ c_player = c_entity:new({
 		-- jump
 		if self.grounded then self.num_jumps = 0 end
 
+		-- only jump on a new button press
+		if btn(input.o) then
+			if not self.jump_pressed then
+				self.jump_newly_pressed = true
+			else
+				self.jump_newly_pressed = false
+			end
+			self.jump_pressed = true
+		else
+			self.jump_pressed = false
+			self.jump_newly_pressed = false
+		end
+
 		local jump_window = time() - self.jumped_at > self.jump_delay
-		self.can_jump = self.num_jumps < self.max_jumps and jump_window
+		self.can_jump = self.num_jumps < self.max_jumps and
+			jump_window and self.stamina >= self.jump_cost and 
+			self.jump_newly_pressed
 		if not jump_window then self.jumping = false end
 
 		if self.can_jump and btn(input.o) then
@@ -451,19 +473,40 @@ c_player = c_entity:new({
 			self.jumping = true
 			self.v.y = 0 -- reset dy before using jump_force
 			self.v.y -= self.jump_force
+			self.stamina -= self.jump_cost
 		end
 
 		-- hold
 		if btn(input.x) and self.on_hold then
+			self.holding = true
 			-- freeze position
 			self.v.x = 0
 			self.v.y = 0
 			-- reset jump
 			self.num_jumps = 0
+		else
+			self.holding = false
+		end
+	end,
+	regen_stamina = function(self)
+		while self.stamina < self.max_stamina do
+			if self.grounded then
+				self.stamina += self.stamina_regen_rate
+			end
+			yield()
 		end
 	end,
 	move = function(self)
 		self:input()
+		-- stamina
+		if self.stamina < self.max_stamina then
+			self.stamina_regen_cor = cocreate(self.regen_stamina)
+		end
+		if self.stamina_regen_cor and costatus(self.stamina_regen_cor) != "dead" then
+			coresume(self.stamina_regen_cor, self)
+		else
+			self.stamina_regen_cor = nil
+		end
 		self:anim()
 		c_entity.move(self)
 	end,
@@ -556,7 +599,9 @@ function draw_game()
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
-	-- print(#actors)
+
+	draw_hud()
+
 	if debug then print(debug) end
 end
 
@@ -564,8 +609,22 @@ function init_game()
 	_update = update_game
 	_draw = draw_game
 	load_level()
---	player=c_player:new({x=0, y=0})
-
-	player=c_player:new({ p = vec2(0, 0)})
+	player=c_player:new({ p = vec2(0, display-(8*2)) })
   player.statemachine.parent = player
+end
+
+function draw_hud()
+	-- stamina bar
+	rectfill(0, 0, 26, 2, 1)
+	if player.stamina > 0 then
+		rectfill(1, 1, mid(1, (player.stamina / 4), 25), 1, 11)
+	end
+
+	-- grip icon
+	rectfill(display-8, 0, display, 7, 1)
+	if player.holding then
+		spr(50, display-8, 0)
+	else
+		spr(49, display-8, 0)
+	end
 end
