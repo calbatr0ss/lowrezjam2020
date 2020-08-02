@@ -18,23 +18,104 @@ classes = {}
 -- actors
 actors = {}
 
+--vector functions (turns out order matters)
+function vec2(x, y)
+  local v = {
+   x = x or 0,
+   y = y or 0
+  }
+  setmetatable(v, vec2_meta)
+  return v
+end
+
+function vec2conv(a)
+  return vec2(a.x, a.y)
+end
+
+vec2_meta = {
+  __add = function(a, b)
+    return vec2(a.x+b.x,a.y+b.y)
+  end,
+  __sub = function(a, b)
+    return vec2(a.x-b.x,a.y-b.y)
+  end,
+  __div = function(a, b)
+    return vec2(a.x/b,a.y/b)
+  end,
+  __mul = function(a, b)
+    return vec2(a.x*b,a.y*b)
+  end
+}
+
+--outer product. will probably go unused in this project
+function vmult2(v1, v2)
+  local vec = vec2(0, 0, 0)
+  vec.x = v1.x * v2.x
+  vec.y = v1.y * v2.y
+  return vec
+end
+
+function vdot(v1, v2)
+  return (v1.x * v2.x) + (v1.y * v2.y)
+end
+
+function vcross(v1, v2)
+  --as a 3d concept, we'll hold of on implimenting this
+  return 0
+end
+
+function vmag(v)
+  local m = max(abs(v.x), abs(v.y))
+  local vec = {x = 0, y = 0}
+  vec.x = v.x / m
+  vec.y = v.y / m
+  return sqrt((vec.x * vec.x) + (vec.y * vec.y)) * m
+end
+
+function vnorm(vec)
+  local v = vec2()
+  v = vec/vmag(vec)
+  return v
+end
+
+function vectortests()
+  local v1 = vec2(2, 2)
+  local v1norm = vnorm(v1)
+  local v1mag = vmag(v1)
+  local v2 = vec2(-9, 3)
+  local adds = v1 + v2
+  local scale = v1 * 4
+
+  line(32, 32, 32+scale.x, 32+scale.y, 7)
+  line(40, 40, 40 + adds.x, 40+adds.y, 6)
+  line(0, 0, v1.x, v1.y, 5)
+  line(32, 0, 32+v2.x, v2.y, 4)
+  print(v1mag, 50, 50, 7)
+  line(v1norm.x, v1norm.y, 0, 0, 3)
+end
+
 -- sprite, base class
 c_sprite = {
 	sprite = nil,
 	sprites = {
 		default = {
 			number = 0,
-			hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			--hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			hitbox = {o = vec2(0, 0), w = 8, h = 8}
 		}
 	},
 	flip = false,
 	name = "sprite",
 	parent = nil,
 	state = "rest",
-	x = 0,
-	y = 0,
-	dx = 0,
-	dy = 0,
+	--[[
+	x = 0
+	y = 0
+	dx = 0
+	dy = 0
+	--]]
+	p = vec2(0, 0),
+	v = vec2(0, 0),
 	new = function(self, o)
 		local o = o or {}
 		setmetatable(o, self)
@@ -43,11 +124,10 @@ c_sprite = {
 		return o
 	end,
 	move = function(self)
-		self.x += self.dx
-		self.y += self.dy
+		self.p += self.v
 	end,
 	draw = function(self)
-		spr(self.sprite.number, self.x, self.y, 1, 1, self.flip)
+		spr(self.sprite.number, self.p.x, self.p.y, 1, 1, self.flip)
 	end
 }
 add(classes, c_sprite:new({}))
@@ -58,18 +138,18 @@ c_object = c_sprite:new({
 	grounded = false,
 	hp = 1,
 	move = function(self)
-		self.y += self.dy
-		while ceil_tile_collide(self) do self.y += 1 end
-		while floor_tile_collide(self) do self.y -= 1 end
+		self.p.y += self.v.y
+		while ceil_tile_collide(self) do self.p.y += 1 end
+		while floor_tile_collide(self) do self.p.y -= 1 end
 		self.grounded = on_ground(self)
-		if self.dx > 0 then self.flip = false -- sprite orientation
-		elseif self.dx < 0 then self.flip = true end
-		self.x += self.dx
-		while right_tile_collide(self) do self.x -= 1 end
-		while left_tile_collide(self) do self.x += 1 end
+		if self.v.x > 0 then self.flip = false -- sprite orientation
+		elseif self.v.x < 0 then self.flip = true end
+		self.p.x += self.v.x
+		while right_tile_collide(self) do self.p.x -= 1 end
+		while left_tile_collide(self) do self.p.x += 1 end
 		-- push out of left boundary... todo: needed?
-		while calc_edges(self).l < 0 do self.x += 1 end
-		self.y = flr(self.y) -- fix short bird issue
+		while calc_edges(self).l < 0 do self.p.x += 1 end
+		self.p.y = flr(self.p.y) -- fix short bird issue
 	end,
 	collide = function(self, other)
 		local personal_space,their_space = calc_edges(self),calc_edges(other)
@@ -90,7 +170,8 @@ c_hold = c_object:new({
 	sprites = {
 		default = {
 			number = 33,
-			hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			--hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			hitbox = {o = vec2(0, 0), w = 8, h = 8 }
 		}
 	}
 })
@@ -104,11 +185,11 @@ c_entity = c_object:new({
 	move = function(self)
 		-- gravity
 		if not self.grounded or self.jumping then
-			self.dy += g_force
+			self.v.y += g_force
 			-- todo: pick good grav bounds -2,5
 			-- todo: stuff clips through ground sometimes because it is 5 height
-			self.dy = mid(-999, self.dy, 5) -- clamp
-		else self.dy = 0 end
+			self.v.y = mid(-999, self.v.y, 5) -- clamp
+		else self.v.y = 0 end
 		-- out of bounds
 		-- if (self.y / 8) > level.h then
 		-- 	self:die()
@@ -126,11 +207,13 @@ c_player = c_entity:new({
 	sprites = {
 		default = {
 			number = 1,
-			hitbox={ ox = 0, oy = 0, w = 8, h = 8 }
+			--hitbox={ ox = 0, oy = 0, w = 8, h = 8 }
+			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
 		},
 		jump = {
 			number = 18,
-			hitbox = { ox=1, oy = 3, w = 6, h = 5 }
+			--hitbox = { ox=1, oy = 3, w = 6, h = 5 }
+			hitbox={ o = vec2(1, 3), w = 6, h = 5 }
 		}
 	},
 	name = "player",
@@ -148,12 +231,12 @@ c_player = c_entity:new({
 	input=function(self)
 		-- left/right movement
 		if btn(input.r) then
-			self.dx = mid(-self.topspd, self.dx + self.spd, self.topspd)
+			self.v.x = mid(-self.topspd, self.v.x + self.spd, self.topspd)
 		elseif btn(input.l) then
-			self.dx = mid(-self.topspd, self.dx - self.spd, self.topspd)
+			self.v.x = mid(-self.topspd, self.v.x - self.spd, self.topspd)
 		else -- decay
-			self.dx *= 0.5
-			if abs(self.dx) < 0.2 then self.dx = 0 end
+			self.v.x *= 0.5
+			if abs(self.v.x) < 0.2 then self.v.x = 0 end
 		end
 
 		-- jump
@@ -167,15 +250,15 @@ c_player = c_entity:new({
 			self.jumped_at = time()
 			self.num_jumps += 1
 			self.jumping = true
-			self.dy = 0 -- reset dy before using jump_force
-			self.dy -= self.jump_force
+			self.v.y = 0 -- reset dy before using jump_force
+			self.v.y -= self.jump_force
 		end
 
 		-- hold
 		if btn(input.x) and self.on_hold then
 			-- freeze position
-			self.dx = 0
-			self.dy = 0
+			self.v.x = 0
+			self.v.y = 0
 			-- reset jump
 			self.num_jumps = 0
 		end
@@ -191,7 +274,7 @@ c_player = c_entity:new({
 				-- debug=actor.name
 				self.on_hold = true
 			end
-		end 
+		end
 	end,
 	die = function(self)
 		sfx(0)
@@ -228,7 +311,8 @@ end
 
 function load_obj(o, x, y)
 	if o.name == "hold" then
-		add(actors, c_hold:new({ x = x * 8, y = y * 8 }))
+		--add(actors, c_hold:new({ x = x * 8, y = y * 8}))
+		add(actors, c_hold:new({p = vec2(x * 8, y * 8)}))
 	end
 end
 
@@ -242,7 +326,7 @@ end
 
 function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
-	foreach(actors, function(a) 
+	foreach(actors, function(a)
 		-- a:move()
 		player:collide(a)
 	end)
@@ -254,7 +338,7 @@ function draw_game()
 	-- testtiles()
   -- testanimation()
 	map(0,0,0,0,64,64) -- draw level
-	-- vectortests()
+	--vectortests()
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
 	-- print(#actors)
@@ -266,5 +350,6 @@ function init_game()
 	_update = update_game
 	_draw = draw_game
 	load_level()
-	player=c_player:new({x=0, y=0})
+--	player=c_player:new({x=0, y=0})
+	player=c_player:new({p = vec2(0, 0)})
 end

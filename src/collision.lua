@@ -34,17 +34,29 @@ end
 function calc_edges(obj)
 	if obj.flip then
 		return {
-			r=obj.x+8-obj.sprite.hitbox.ox-1,
-			l=obj.x+8-obj.sprite.hitbox.ox-obj.sprite.hitbox.w,
-			t=obj.y+obj.sprite.hitbox.oy,
-			b=obj.y+obj.sprite.hitbox.oy+obj.sprite.hitbox.h-1
+			--[[
+			r=obj.p.x+8-obj.sprite.hitbox.ox-1,
+			l=obj.p.x+8-obj.sprite.hitbox.ox-obj.sprite.hitbox.w,
+			t=obj.p.y+obj.sprite.hitbox.oy,
+			b=obj.p.y+obj.sprite.hitbox.oy+obj.sprite.hitbox.h-1
+			--]]
+			r=obj.p.x+8-obj.sprite.hitbox.o.x-1,
+			l=obj.p.x+8-obj.sprite.hitbox.o.x-obj.sprite.hitbox.w,
+			t=obj.p.y+obj.sprite.hitbox.o.y,
+			b=obj.p.y+obj.sprite.hitbox.o.y+obj.sprite.hitbox.h-1
 		}
 	else
 		return {
-			r=obj.x+obj.sprite.hitbox.ox+obj.sprite.hitbox.w-1,
-			l=obj.x+obj.sprite.hitbox.ox,
-			t=obj.y+obj.sprite.hitbox.oy,
-			b=obj.y+obj.sprite.hitbox.oy+obj.sprite.hitbox.h-1
+			--[[
+			r=obj.p.x+obj.sprite.hitbox.ox+obj.sprite.hitbox.w-1,
+			l=obj.p.x+obj.sprite.hitbox.ox,
+			t=obj.p.y+obj.sprite.hitbox.oy,
+			b=obj.p.y+obj.sprite.hitbox.oy+obj.sprite.hitbox.h-1
+			--]]
+			r=obj.p.x+obj.sprite.hitbox.o.x+obj.sprite.hitbox.w-1,
+			l=obj.p.x+obj.sprite.hitbox.o.x,
+			t=obj.p.y+obj.sprite.hitbox.o.y,
+			b=obj.p.y+obj.sprite.hitbox.o.y+obj.sprite.hitbox.h-1
 		}
 	end
 end
