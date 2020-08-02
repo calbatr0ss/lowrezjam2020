@@ -31,8 +31,8 @@ c_sprite = {
 	name = "sprite",
 	parent = nil,
 	state = "rest",
-	p = vec2(0, 0)
-	v = vec2(0, 0)
+	p = vec2(0, 0),
+	v = vec2(0, 0),
 	new = function(self, o)
 		local o = o or {}
 		setmetatable(o, self)
