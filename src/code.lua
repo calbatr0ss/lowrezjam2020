@@ -132,6 +132,38 @@ c_sprite = {
 }
 add(classes, c_sprite:new({}))
 
+--state machine system
+c_state = {
+  name = "state",
+  states = {
+    default = {
+      name = "rest",
+      rules = {
+        rule1 = function(self)
+          --put transitional logic here
+          return "rest"
+        end
+      }
+    }
+  },
+  currentstate = nil,
+  new = function(self, o)
+    local o = o or {}
+    setmetatable(o, self)
+    self.__index = self
+    self.currentstate = self.states[1]
+    debug = self.name
+    return o
+  end,
+  transition = function(self)
+    --[[for i = 1, count(self.currentstate.rules), 1 do
+      --local name = self.states[self.currentstate.name].rules[i](self)
+      local name = self.currentstate.rules[i](self)
+      if (name ~= self.currentstate.name) self.currentstate = self.states[name]
+      end--]]
+  end,
+}
+
 -- animation, inherites from sprite
 c_anim = c_sprite:new({
 	name = "animation",
@@ -234,14 +266,31 @@ c_player = c_entity:new({
 			number = 2,
 			--hitbox = { ox=1, oy = 3, w = 6, h = 5 }
 			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
-		}
+		},
+    hold = {
+      number = 5,
+      hitbox={ o = vec2(0, 0), w = 8, h = 8 }
+    },
+    shimmy = {
+      number = 8,
+      hitbox={ o = vec2(0, 0), w = 8, h = 8 }
+    }
 	},
 	anims = {
-		walk  = c_anim:new({
+		walk = c_anim:new({
 			frames = {2, 3, 4},
 			fc = 3
-		})
+		}),
+    hold = c_anim:new({
+			frames = {5, 6, 7},
+			fc = 3
+		}),
+    shimmy = c_anim:new({
+      frames = {8, 9, 10},
+      fc = 3
+    })
 	},
+  statemachine = nil,
 	name = "player",
 	spd = 0.5,
 	jump_force = 2,
@@ -292,7 +341,7 @@ c_player = c_entity:new({
 	end,
 	move = function(self)
 		self:input()
-		self:anim()
+		--self:anim()
 		c_entity.move(self)
 	end,
 	determinestate = function(self)
@@ -315,7 +364,9 @@ c_player = c_entity:new({
 		self.dead = true
 	end,
 	anim = function(self)
-		self:determinestate()
+		--self:determinestate()
+    --self.statemachine.transition(self)
+    --self.state = self.statemachine.currentstate.name
 		-- todo: find a way to save the sprites and hitboxes to the states?
 		if self.state=="rest" then
 			self.sprite=self.sprites.default
@@ -327,6 +378,7 @@ c_player = c_entity:new({
 			self.anims.walk:advance()
 			self.sprites.walk.number = self.anims.walk.currentframe
 			self.sprite = self.sprites.walk
+
 		elseif self.state=="jump" then
 			self.sprite=self.sprites.jump
 		end
@@ -382,7 +434,6 @@ function draw_game()
 	player:draw()
 	-- print(#actors)
 	if debug then print(debug) end
-	debug=nil
 end
 
 function init_game()
@@ -390,5 +441,32 @@ function init_game()
 	_draw = draw_game
 	load_level()
 --	player=c_player:new({x=0, y=0})
-	player=c_player:new({p = vec2(0, 0)})
+	player=c_player:new({
+      p = vec2(0, 0),
+      statemachine = c_state:new({
+        name = "pop",
+        states = {
+          rest = {
+            name = "rest",
+            rules = {
+              rule1 = function(self)
+                if abs(v.x) > 0.01 and self.on_hold == false then
+                  return "walk"
+                  end
+                end
+              }
+            },
+          walk = {
+            name = "walk",
+            rules = {
+              rule1 = function(self)
+                if abs(v.x) <= 0.01 and self.on_hold == false then
+                  return "rest"
+                end
+              end
+            }
+          }
+        }
+      })
+    })
 end
