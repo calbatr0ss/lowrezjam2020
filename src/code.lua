@@ -34,16 +34,16 @@ end
 
 vec2_meta = {
   __add = function(a, b)
-    return vec2(a.x+b.x,a.y+b.y)
+	return vec2(a.x+b.x,a.y+b.y)
   end,
   __sub = function(a, b)
-    return vec2(a.x-b.x,a.y-b.y)
+	return vec2(a.x-b.x,a.y-b.y)
   end,
   __div = function(a, b)
-    return vec2(a.x/b,a.y/b)
+	return vec2(a.x/b,a.y/b)
   end,
   __mul = function(a, b)
-    return vec2(a.x*b,a.y*b)
+	return vec2(a.x*b,a.y*b)
   end
 }
 
@@ -138,36 +138,36 @@ c_state = {
   parent = nil,
   currentstate = nil,
   states = {
-    default = {
-      name = "rest",
-      rules = {
-        function(self)
-          --put transitional logic here
-          return "rest"
-        end
-      }
-    }
+	default = {
+	  name = "rest",
+	  rules = {
+		function(self)
+		  --put transitional logic here
+		  return "rest"
+		end
+	  }
+	}
   },
 
   --Why do we use o.states.default instead of self.states.default (157)
   new = function(self, o)
-    local o = o or {}
-    setmetatable(o, self)
-    self.__index = self
-    o.currentstate = o.states.default
-    return o
+	local o = o or {}
+	setmetatable(o, self)
+	self.__index = self
+	o.currentstate = o.states.default
+	return o
   end,
   transition = function(self)
-    local name = self.currentstate.name
-    debug = name
-    local rules = #self.currentstate.rules
-    local i = 1
-    while (name == self.currentstate.name) and i <= rules do
-      local var = self.currentstate.rules[i](self.parent)
-      if (var) name = var
-      i += 1
-    end
-    self.currentstate = self.states[name]
+	local name = self.currentstate.name
+	debug = name
+	local rules = #self.currentstate.rules
+	local i = 1
+	while (name == self.currentstate.name) and i <= rules do
+	  local var = self.currentstate.rules[i](self.parent)
+	  if (var) name = var
+	  i += 1
+	end
+	self.currentstate = self.states[name]
   end
 }
 
@@ -187,9 +187,9 @@ c_anim = c_sprite:new({
 		end
 	end,
   loopbackward = function(self)
-    if self.playing == true then
-      self.currentframe = fc - (flr(time() * self.fr % self.fc) + 2)
-    end
+	if self.playing == true then
+	  self.currentframe = fc - (flr(time() * self.fr % self.fc) + 2)
+	end
   end,
 	stop = function(self)
 		playing = false
@@ -279,139 +279,138 @@ c_player = c_entity:new({
 			--hitbox = { ox=1, oy = 3, w = 6, h = 5 }
 			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
 		},
-    hold = {
-      number = 5,
-      hitbox={ o = vec2(0, 0), w = 8, h = 8 }
-    },
-    shimmy = {
-      number = 8,
-      hitbox={ o = vec2(0, 0), w = 8, h = 8 }
-    },
-    hold = {
-      number = 5,
-      hitbox = {o = vec2(0, 0), w = 8, h = 8}
-    },
-    falling = {
-      number = 11,
-      hitbox = {o = vec2(0, 0), w = 8, h = 8}
-    }
+	hold = {
+	  number = 5,
+	  hitbox={ o = vec2(0, 0), w = 8, h = 8 }
+	},
+	shimmy = {
+	  number = 8,
+	  hitbox={ o = vec2(0, 0), w = 8, h = 8 }
+	},
+	hold = {
+	  number = 5,
+	  hitbox = {o = vec2(0, 0), w = 8, h = 8}
+	},
+	falling = {
+	  number = 11,
+	  hitbox = {o = vec2(0, 0), w = 8, h = 8}
+	}
 	},
 	anims = {
 		walk = c_anim:new({
 			frames = {2, 3, 4},
 			fc = 3
 		}),
-    hold = c_anim:new({
+	hold = c_anim:new({
 			frames = {5, 6, 7},
 			fc = 3
 		}),
-    shimmy = c_anim:new({
-      frames = {8, 9, 10},
-      fc = 3
-    }),
-    falling = c_anim:new({
-      frames = {11, 12},
-      fc = 2
-    })
+	shimmy = c_anim:new({
+	  frames = {8, 9, 10},
+	  fc = 3
+	}),
+	falling = c_anim:new({
+	  frames = {11, 12},
+	  fc = 2
+	})
 	},
-  --Replace references to 'on_hold' with 'holding' after merge
   statemachine = c_state:new({
-    name = "states",
-    states = {
-      default = {
-        name = "default",
-        rules = {
-          function(p)
-            if abs(p.v.x) > 0.01 and p.on_hold == false then
-              return "walk"
-              end
-            end
-          }
-        },
-      walk = {
-        name = "walk",
-        rules = {
-          function(p)
-            if abs(p.v.x) <= 0.01 and p.on_hold == false then
-              return "default"
-            end
-          end,
-          function(p)
-            if abs(p.v.x) <= 0.01 and p.on_hold == true then
-              return "hold"
-            end
-          end
-        }
-      },
-      hold = {
-        name = "hold",
-        rules = {
-          function(p)
-            if abs(p.v.x) <= 0.01 and p.on_hold == false then
-              return "default"
-            end
-          end,
-          function(p)
-            if p.v.x >= 0.01 and p.on_hold == true then
-              return "shimmyr"
-            end
-            if p.v.y <= -0.01 and p.on_hold == true then
-              return "shimmyl"
-            end
-          end
-        }
-      },
-      shimmyl = {
-        name = "shimmyl",
-        rules = {
-          function(p)
-            if abs(p.v.x) < 0.01 and p.on_hold == true then
-              return "hold"
-            end
-          end,
-          function(p)
-            if p.on_hold == false then
-              return "default"
-            end
-          end,
-          function(p)
-            if not p.on_hold and p.v.y < 0.0 then
-              return "falling"
-            end
-          end
-        }
-      },
-      shimmyr = {
-        name = "shimmyr",
-        rules = {
-          function(p)
-            if abs(p.v.x) < 0.01 and p.on_hold == true then
-              return "hold"
-              end
-          end,
-          function(p)
-            if p.on_hold == false then
-              return "default"
-            end
-          end,
-          function(p)
-            if not p.on_hold and p.v.y < 0.0 then
-              return "falling"
-            end
-          end
-        }
-      },
-      falling = {
-        name = "falling",
-        rules = {
-          function(p)
-            if p.grounded then
-              return "default"
-            end
-          end
-        }
-      }
-    }
+	name = "states",
+	states = {
+	  default = {
+		name = "default",
+		rules = {
+		  function(p)
+			if abs(p.v.x) > 0.01 and p.holding == false then
+			  return "walk"
+			  end
+			end
+		  }
+		},
+	  walk = {
+		name = "walk",
+		rules = {
+			function(p)
+				if abs(p.v.x) <= 0.01 and p.holding == false then
+					return "default"
+				end
+			end,
+			function(p)
+				if abs(p.v.x) <= 0.01 and p.holding == true then
+					return "hold"
+				end
+			end
+		}
+	  },
+	  hold = {
+		name = "hold",
+		rules = {
+		  function(p)
+			if abs(p.v.x) <= 0.01 and p.holding == false then
+			  return "default"
+			end
+		  end,
+		  function(p)
+			if p.v.x >= 0.01 and p.holding == true then
+			  return "shimmyr"
+			end
+			if p.v.y <= -0.01 and p.holding == true then
+			  return "shimmyl"
+			end
+		  end
+		}
+	  },
+	  shimmyl = {
+		name = "shimmyl",
+		rules = {
+		  function(p)
+			if abs(p.v.x) < 0.01 and p.holding == true then
+			  return "hold"
+			end
+		  end,
+		  function(p)
+			if p.holding == false then
+			  return "default"
+			end
+		  end,
+		  function(p)
+			if not p.holding and p.v.y < 0.0 then
+			  return "falling"
+			end
+		  end
+		}
+	  },
+	  shimmyr = {
+		name = "shimmyr",
+		rules = {
+		  function(p)
+			if abs(p.v.x) < 0.01 and p.holding == true then
+			  return "hold"
+			  end
+		  end,
+		  function(p)
+			if p.holding == false then
+			  return "default"
+			end
+		  end,
+		  function(p)
+			if not p.holding and p.v.y < 0.0 then
+			  return "falling"
+			end
+		  end
+		}
+	  },
+	  falling = {
+		name = "falling",
+		rules = {
+		  function(p)
+			if p.grounded then
+			  return "default"
+			end
+		  end
+		}
+	  }
+	}
   }),
 	name = "player",
 	spd = 0.5,
@@ -464,6 +463,7 @@ c_player = c_entity:new({
 		local jump_window = time() - self.jumped_at > self.jump_delay
 		self.can_jump = self.num_jumps < self.max_jumps and
 			jump_window and self.stamina >= self.jump_cost and 
+			not self.holding and
 			self.jump_newly_pressed
 		if not jump_window then self.jumping = false end
 
@@ -524,8 +524,8 @@ c_player = c_entity:new({
 	end,
 	anim = function(self)
 		--self:determinestate()
-    self.statemachine.transition(self.statemachine)
-    self.state = self.statemachine.currentstate.name
+	self.statemachine.transition(self.statemachine)
+	self.state = self.statemachine.currentstate.name
 		-- todo: find a way to save the sprites and hitboxes to the states?
 		if self.state=="default" then
 			self.sprite=self.sprites.default
@@ -538,16 +538,16 @@ c_player = c_entity:new({
 			self.sprites.walk.number = self.anims.walk.currentframe
 			self.sprite = self.sprites.walk
 
-    elseif self.state == "hold" then
-        self.sprite = self.sprites.hold
-    elseif self.state == "shimmyl" then
-      self.sprite = self.sprites.shimmy
-    elseif self.state == "shimmyr" then
-      self.sprite = self.sprites.shimmy
+	elseif self.state == "hold" then
+		self.sprite = self.sprites.hold
+	elseif self.state == "shimmyl" then
+	  self.sprite = self.sprites.shimmy
+	elseif self.state == "shimmyr" then
+	  self.sprite = self.sprites.shimmy
 		elseif self.state=="jump" then
 			self.sprite=self.sprites.jump
-    elseif self.state == "falling" then
-      self.sprite=self.sprites.falling
+	elseif self.state == "falling" then
+	  self.sprite=self.sprites.falling
 		end
 	end
 })
