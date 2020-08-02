@@ -132,6 +132,26 @@ c_sprite = {
 }
 add(classes, c_sprite:new({}))
 
+-- animation, inherites from sprite
+c_anim = c_sprite:new({
+	name = "animation",
+	fr = 15,
+	frames = {1},
+	fc = 1,
+	playing = false,
+	currentframe = 1,
+	advance=function(self)
+		if self.playing == true then
+			--add 2 to the end to componsate for flr and 1-index
+			self.currentframe = flr(time() * self.fr % self.fc) + 2
+		end
+	end,
+	stop = function(self)
+		playing = false
+	end
+})
+add(classes, c_anim:new({}))
+
 -- object, inherits from sprite
 c_object = c_sprite:new({
 	name="object",
@@ -210,15 +230,22 @@ c_player = c_entity:new({
 			--hitbox={ ox = 0, oy = 0, w = 8, h = 8 }
 			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
 		},
-		jump = {
-			number = 18,
+		walk = {
+			number = 2,
 			--hitbox = { ox=1, oy = 3, w = 6, h = 5 }
-			hitbox={ o = vec2(1, 3), w = 6, h = 5 }
+			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
 		}
+	},
+	anims = {
+		walk  = c_anim:new({
+			frames = {2, 3, 4},
+			fc = 3
+		})
 	},
 	name = "player",
 	spd = 0.5,
 	jump_force = 2,
+	currentanim = "default",
 	topspd = 2, -- all player speeds must be integers to avoid camera jitter
 	jumped_at = 0,
 	num_jumps = 0,
@@ -268,6 +295,13 @@ c_player = c_entity:new({
 		self:anim()
 		c_entity.move(self)
 	end,
+	determinestate = function(self)
+		if (abs(self.v.x) > 0.01) then
+			self.state = "walk"
+		else
+			self.state = "rest"
+		end
+	end,
 	collide = function(self, actor)
 		if c_entity.collide(self, actor) then
 			if actor.name == "hold" then
@@ -281,13 +315,18 @@ c_player = c_entity:new({
 		self.dead = true
 	end,
 	anim = function(self)
+		self:determinestate()
 		-- todo: find a way to save the sprites and hitboxes to the states?
 		if self.state=="rest" then
 			self.sprite=self.sprites.default
 		elseif self.state=="sit" then
 			self.sprite=self.sprites.sit
+		--assign state, make animation play, set frame number to existing sprite hitbox
 		elseif self.state=="walk" then
-			self.sprite=self.sprites.walk
+			self.anims.walk.playing = true
+			self.anims.walk:advance()
+			self.sprites.walk.number = self.anims.walk.currentframe
+			self.sprite = self.sprites.walk
 		elseif self.state=="jump" then
 			self.sprite=self.sprites.jump
 		end
