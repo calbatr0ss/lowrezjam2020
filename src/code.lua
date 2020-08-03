@@ -12,10 +12,7 @@ player = nil
 g_force = 0.2
 display = 64
 input= { l = 0, r = 1, u = 2, d = 3, o = 4, x = 5 }
--- classes table
 classes = {}
-
--- actors
 actors = {}
 
 -- particles
@@ -110,6 +107,24 @@ function vectortests()
   print(v1mag, 50, 50, 7)
   line(v1norm.x, v1norm.y, 0, 0, 3)
 end
+
+cam = {
+	pos = vec2(0, 0),
+	lerp = 0.15,
+	update = function(self, track_pos)
+		-- direct follow
+		-- cam.pos.x = track_pos.x - (display / 2) + 4
+		-- cam.pos.y = track_pos.y - ((display / 3) * 2) + 4
+
+		-- lerp follow
+		local half = display / 2 - 4
+		local third = ((display / 3) * 2) - 4
+		self.pos.x += (track_pos.x - self.pos.x - half) * self.lerp
+		self.pos.y += (track_pos.y - self.pos.y - third) * self.lerp
+
+		camera(self.pos.x, self.pos.y)
+	end
+}
 
 -- sprite, base class
 c_sprite = {
@@ -519,7 +534,7 @@ c_player = c_entity:new({
 		if self.grounded then self.num_jumps = 0 end
 
 		-- only jump on a new button press
-		if btn(input.o) then
+		if btn(input.x) then
 			if not self.jump_pressed then
 				self.jump_newly_pressed = true
 			else
@@ -533,12 +548,12 @@ c_player = c_entity:new({
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
 		self.can_jump = self.num_jumps < self.max_jumps and
-			jump_window and self.stamina >= self.jump_cost and
+			jump_window and self.stamina >= 0 and 
 			not self.holding and
 			self.jump_newly_pressed
 		if not jump_window then self.jumping = false end
 
-		if self.can_jump and btn(input.o) then
+		if self.can_jump and btn(input.x) then
 			self.jumped_at = time()
 			self.num_jumps += 1
 			self.jumping = true
@@ -548,7 +563,7 @@ c_player = c_entity:new({
 		end
 
 		-- hold
-		if btn(input.x) and self.on_hold then
+		if btn(input.o) and self.on_hold then
 			self.holding = true
 			-- freeze position
 			self.v.x = 0
@@ -669,6 +684,7 @@ function update_game()
   if (btnp(5)) c_strut:test()
   solveparticles()
   --coresume(parts)
+	cam:update(player.p)
 end
 
 function draw_game()
@@ -696,16 +712,34 @@ end
 
 function draw_hud()
 	-- stamina bar
-	rectfill(0, 0, 26, 2, 1)
+	rectfill(
+		cam.pos.x,
+		cam.pos.y,
+		cam.pos.x + 26,
+		cam.pos.y + 2,
+		1
+	)
 	if player.stamina > 0 then
-		rectfill(1, 1, mid(1, (player.stamina / 4), 25), 1, 11)
+		rectfill(
+			cam.pos.x + 1,
+			cam.pos.y + 1,
+			cam.pos.x + mid(1, (player.stamina / 4), 25),
+			cam.pos.y + 1,
+			11
+		)
 	end
 
 	-- grip icon
-	rectfill(display-8, 0, display, 7, 1)
+	rectfill(
+		cam.pos.x + display - 8,
+		cam.pos.y,
+		cam.pos.x + display,
+		cam.pos.y + 7,
+		1
+	)
 	if player.holding then
-		spr(50, display-8, 0)
+		spr(50, cam.pos.x + display - 8, cam.pos.y)
 	else
-		spr(49, display-8, 0)
+		spr(49, cam.pos.x + display - 8, cam.pos.y)
 	end
 end
