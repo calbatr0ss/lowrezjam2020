@@ -122,6 +122,9 @@ cam = {
 		self.pos.x += (track_pos.x - self.pos.x - half) * self.lerp
 		self.pos.y += (track_pos.y - self.pos.y - third) * self.lerp
 
+		-- prevent camera jitter
+		self.pos.x = flr(self.pos.x)
+		self.pos.y = flr(self.pos.y)
 		camera(self.pos.x, self.pos.y)
 	end
 }
@@ -681,10 +684,9 @@ function update_game()
 	end)
 	player:move()
   --test particles
-  if (btnp(5)) c_strut:test()
+--   if (btnp(5)) c_strut:test()
   solveparticles()
   --coresume(parts)
-	cam:update(player.p)
 end
 
 function draw_game()
@@ -695,9 +697,9 @@ function draw_game()
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
-  drawparticles()
+	drawparticles()
+	cam:update(player.p)
 	draw_hud()
-
 	if debug then print(debug) end
 end
 
