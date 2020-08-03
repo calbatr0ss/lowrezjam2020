@@ -56,9 +56,17 @@ vec2_meta = {
   end
 }
 
+-- classic multiplication between 2 vectors
+function vmult(v1, v2)
+  local vec = vec2(0, 0)
+  vec.x = v1.x * v2.x
+  vec.y = v1.y * v2.y
+  return vec
+end
+
 --outer product. will probably go unused in this project
 function vmult2(v1, v2)
-  local vec = vec2(0, 0, 0)
+  local vec = vec2(0, 0)
   vec.x = v1.x * v2.x
   vec.y = v1.y * v2.y
   return vec
@@ -657,8 +665,10 @@ function update_game()
 		player:collide(a)
 	end)
 	player:move()
-  --if (btn(5)) smokepuff:test()
-  coresume(parts)
+  --test particles
+  if (btnp(5)) c_strut:test()
+  solveparticles()
+  --coresume(parts)
 end
 
 function draw_game()
@@ -681,7 +691,7 @@ function init_game()
 	load_level()
 	player=c_player:new({ p = vec2(0, display-(8*2)) })
   player.statemachine.parent = player
-  parts = cocreate(solveparticles)
+  --parts = cocreate(solveparticles)
 end
 
 function draw_hud()

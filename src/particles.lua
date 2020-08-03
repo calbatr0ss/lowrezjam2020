@@ -139,7 +139,7 @@ smokepuff = s_particle:new({
 
 -- solve all particles via their preferred solver
 function solveparticles()
-  while true do
+--  while true do
     if (#particles > 0) then
       for j = 1, #particles, 1 do
         particles[j]:solve()
@@ -152,9 +152,87 @@ function solveparticles()
         j += 1
       end
     end
-    yield();
-  end
+--    yield();
+--  end
 end
+
+-- A singular spring strut
+c_strut = {
+  ends = {
+    c_particle:new({
+      p = vec2(32, 20),
+      v = vec2(0, 0),
+      g = 0,
+      life = 1
+  }),
+    c_particle:new({
+    p = vec2(32, 40),
+    v = vec2(0, 0),
+    g = 0,
+    life = 100
+  })
+  },
+  ideal = 0,
+  time = 0,
+  life = 100,
+  -- strut force and strut dampening
+  ks = 0,
+  kd = 0,
+  --calculates forces acting on one partice. opposite can be applied to the other
+  calculateforces = function(self)
+    local force = vec2(0, 0)
+    local diff = self.ends[2].p - self.ends[1].p
+    local unit = vnorm(diff)
+  --  force += (unit * (vmag(diff) - self.ideal) * ks) + (unit * kd * vdot((self.ends[2].v - self.ends[1].v), unit))
+    force = unit * (vmag(diff) - self.ideal) * self.ks + (unit * self.kd * vdot((self.ends[2].v - self.ends[1].v), unit))
+    self.ends[1].f = force
+    self.ends[2].f = force * -1
+    --self.ends[1] += vec2(0, self.ends[1].g) * self.ends[1].m
+    --self.ends[2] += vec2(0, self.ends[2].g) * self.ends[2].m
+    return force
+  end,
+  draw = function(self)
+    line(self.ends[1].p.x, self.ends[1].p.y, self.ends[2].p.x, self.ends[2].p.y, self.ends[1].c)
+  end,
+  solve = function(self)
+    --solve function is the same as earlier, only life gets reset
+    self.time = 0
+    local strutforces = self.calculateforces(self)
+    self.ends[1].lastpos = self.ends[1].p
+    self.ends[2].lastpos = self.ends[2].p
+    self.ends[1].p = self.ends[1].p + (self.ends[1].v * self.ends[1].dt)
+    self.ends[2].p = self.ends[2].p + (self.ends[2].v * self.ends[2].dt)
+    self.ends[1].f += strutforces
+    self.ends[2].f -= strutforces
+    self.ends[1].v = self.ends[1].v + (self.ends[1].f / self.ends[1].m * self.ends[1].dt) - (self.ends[1].v * self.ends[1].damp*self.ends[1].dt)
+    self.ends[2].v = self.ends[2].v + (self.ends[2].f / self.ends[2].m * self.ends[2].dt) - (self.ends[2].v * self.ends[2].damp*self.ends[2].dt)
+    return self
+  end,
+  new = function(self, o)
+    local o = o or {}
+    setmetatable(o, self)
+    self.__index = self
+    return o
+  end,
+  test = function(self)
+    local s1 = c_strut:new({
+      ends = {
+        c_particle:new({
+          p = vec2(32, 20),
+          v = vec2(0, 0),
+        }),
+        c_particle:new({
+          p = vec2(32, 40),
+          v = vec2(0, 0),
+        })
+      },
+      ks = 1,
+      kd = 0.1,
+      ideal = 15
+    })
+    add(particles, s1)
+  end
+}
 
 function drawparticles()
   for i=1, #particles, 1 do
