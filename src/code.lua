@@ -15,6 +15,15 @@ input= { l = 0, r = 1, u = 2, d = 3, o = 4, x = 5 }
 classes = {}
 actors = {}
 
+-- particles
+particles = {}
+
+function clamp(v, a, b)
+  if (v > b) v = b
+  if (v < a) v = a
+  return v
+end
+
 --vector functions (turns out order matters)
 function vec2(x, y)
   local v = {
@@ -44,9 +53,17 @@ vec2_meta = {
   end
 }
 
+-- classic multiplication between 2 vectors
+function vmult(v1, v2)
+  local vec = vec2(0, 0)
+  vec.x = v1.x * v2.x
+  vec.y = v1.y * v2.y
+  return vec
+end
+
 --outer product. will probably go unused in this project
 function vmult2(v1, v2)
-  local vec = vec2(0, 0, 0)
+  local vec = vec2(0, 0)
   vec.x = v1.x * v2.x
   vec.y = v1.y * v2.y
   return vec
@@ -163,7 +180,6 @@ c_state = {
 	  }
 	}
   },
-
   --Why do we use o.states.default instead of self.states.default (157)
   new = function(self, o)
 	local o = o or {}
@@ -193,16 +209,18 @@ c_anim = c_sprite:new({
 	frames = {1},
 	fc = 1,
 	playing = false,
+  playedonce = false,
+  starttime = 0,
 	currentframe = 1,
 	loopforward=function(self)
 		if self.playing == true then
 			--add 2 to the end to componsate for flr and 1-index
-			self.currentframe = flr(time() * self.fr % self.fc) + 2
+			self.currentframe = flr(time() * self.fr % self.fc) + 1
 		end
 	end,
   loopbackward = function(self)
 	if self.playing == true then
-	  self.currentframe = fc - (flr(time() * self.fr % self.fc) + 2)
+	  self.currentframe = self.fc - (flr(time() * self.fr % self.fc) + 1)
 	end
   end,
 	stop = function(self)
@@ -308,7 +326,11 @@ c_player = c_entity:new({
 	falling = {
 	  number = 11,
 	  hitbox = {o = vec2(0, 0), w = 8, h = 8}
-	}
+	},
+  jump = {
+    number = 2,
+  	hitbox = {o = vec2(0, 0), w = 8, h = 8}
+  }
 	},
 	anims = {
 		walk = c_anim:new({
@@ -335,10 +357,18 @@ c_player = c_entity:new({
 		name = "default",
 		rules = {
 		  function(p)
-			if abs(p.v.x) > 0.01 and p.holding == false then
+			if abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
 			  return "walk"
 			  end
-			end
+			end,
+      function(p)
+      if p.v.y > 0 and p.grounded == false then
+        return "falling"
+      end
+      end,
+      function(p)
+        if (p.v.y < 0) return "jumping"
+      end
 		  }
 		},
 	  walk = {
@@ -353,12 +383,37 @@ c_player = c_entity:new({
 				if abs(p.v.x) <= 0.01 and p.holding == true then
 					return "hold"
 				end
-			end
+			end,
+      function(p)
+        if p.v.y < 0 and p.grounded then
+          return "jumping"
+        end
+      end
 		}
 	  },
+    jumping = {
+      name = "jumping",
+      rules = {
+        function(p)
+          if (p.v.y > 0) then
+            return "falling"
+          end
+        end,
+        function(p)
+          if (p.holding) then
+            return "hold"
+          end
+        end
+      }
+    },
 	  hold = {
 		name = "hold",
 		rules = {
+      function(p)
+      if p.v.y < 0 and p.holding == false then
+        return "falling"
+      end
+      end,
 		  function(p)
 			if abs(p.v.x) <= 0.01 and p.holding == false then
 			  return "default"
@@ -371,7 +426,10 @@ c_player = c_entity:new({
 			if p.v.y <= -0.01 and p.holding == true then
 			  return "shimmyl"
 			end
-		  end
+		  end,
+      function(p)
+      if (not p.holding) return "default"
+      end
 		}
 	  },
 	  shimmyl = {
@@ -383,9 +441,7 @@ c_player = c_entity:new({
 			end
 		  end,
 		  function(p)
-			if p.holding == false then
-			  return "default"
-			end
+			if (not p.holding) return "default"
 		  end,
 		  function(p)
 			if not p.holding and p.v.y < 0.0 then
@@ -403,9 +459,7 @@ c_player = c_entity:new({
 			  end
 		  end,
 		  function(p)
-			if p.holding == false then
-			  return "default"
-			end
+			if (not p.holding) return "default"
 		  end,
 		  function(p)
 			if not p.holding and p.v.y < 0.0 then
@@ -418,10 +472,28 @@ c_player = c_entity:new({
 		name = "falling",
 		rules = {
 		  function(p)
-			if p.grounded then
-			  return "default"
-			end
-		  end
+			if (p.grounded) then
+        local particle2 = smokepuff:new({
+          p = player.p,
+          v = vec2(-2, 0),
+          dt = 1
+        })
+        local particle = smokepuff:new({
+          p = player.p,
+          v = vec2(2, 0),
+          dt = 1
+        })
+        add(particles, particle)
+        add(particles, particle2)
+        return "default"
+      end
+		  end,
+      function(p)
+      if (p.holding) return "hold"
+      end,
+      function(p)
+      if (p.v.y < 0) return "jumping"
+      end
 		}
 	  }
 	}
@@ -527,7 +599,6 @@ c_player = c_entity:new({
 	collide = function(self, actor)
 		if c_entity.collide(self, actor) then
 			if actor.name == "hold" then
-				-- debug=actor.name
 				self.on_hold = true
 			end
 		end
@@ -538,6 +609,7 @@ c_player = c_entity:new({
 	end,
 	anim = function(self)
 		--self:determinestate()
+  local frame = 1
 	self.statemachine.transition(self.statemachine)
 	self.state = self.statemachine.currentstate.name
 		-- todo: find a way to save the sprites and hitboxes to the states?
@@ -549,6 +621,7 @@ c_player = c_entity:new({
 		elseif self.state=="walk" then
 			self.anims.walk.playing = true
 			self.anims.walk:loopforward()
+      frame = self.anims.walk.frames[self.anims.walk.currentframe]
 			self.sprites.walk.number = self.anims.walk.currentframe
 			self.sprite = self.sprites.walk
 
@@ -558,9 +631,13 @@ c_player = c_entity:new({
 	  self.sprite = self.sprites.shimmy
 	elseif self.state == "shimmyr" then
 	  self.sprite = self.sprites.shimmy
-		elseif self.state=="jump" then
-			self.sprite=self.sprites.jump
+	elseif self.state=="jumping" then
+      self.sprite = self.sprites.jump
 	elseif self.state == "falling" then
+    self.anims.falling.playing = true
+    self.anims.falling:loopforward()
+    frame = self.anims.falling.frames[self.anims.falling.currentframe]
+    self.sprites.falling.number = frame
 	  self.sprite=self.sprites.falling
 		end
 	end
@@ -603,6 +680,10 @@ function update_game()
 		player:collide(a)
 	end)
 	player:move()
+  --test particles
+  if (btnp(5)) c_strut:test()
+  solveparticles()
+  --coresume(parts)
 	cam:update(player.p)
 end
 
@@ -614,7 +695,7 @@ function draw_game()
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
 	player:draw()
-
+  drawparticles()
 	draw_hud()
 
 	if debug then print(debug) end
@@ -625,7 +706,8 @@ function init_game()
 	_draw = draw_game
 	load_level()
 	player=c_player:new({ p = vec2(0, display-(8*2)) })
-	player.statemachine.parent = player
+  player.statemachine.parent = player
+  --parts = cocreate(solveparticles)
 end
 
 function draw_hud()
