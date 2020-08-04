@@ -675,10 +675,13 @@ function update_game()
 	end)
 	player:move()
 	--test particles
-	-- solveparticles()
+	solveparticles()
 	coresume(parts)
 	cam:update(player.p)
 	-- if (btnp(5)) c_strut:test()
+  --test particles
+--   if (btnp(5)) c_strut:test()
+  --coresume(parts)
 end
 
 function draw_game()
