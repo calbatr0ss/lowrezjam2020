@@ -235,32 +235,44 @@ rope = {
   end,
   solve = function(self)
     self.time = 0
+    local send1 = {}
+    local send2 = {}
+    -- Positions need to be set first, and endpoint v needs to be 0
     for i = 1, #self.struts, 1 do
-      self.time = 0
-      self.struts[i].ends[1].lastpos = self.struts[i].ends[1].p
-      self.struts[i].ends[2].lastpos = self.struts[i].ends[2].p
-      self.struts[i].ends[1].p = self.struts[i].ends[1].p + (self.struts[i].ends[1].v * self.struts[i].ends[1].dt)
-      self.struts[i].ends[2].p = self.struts[i].ends[2].p + (self.struts[i].ends[2].v * self.struts[i].ends[2].dt)
-      self.struts[1].ends[1].p = player.p + vec2(4, 5)
-      self.struts[#self.struts].ends[2].p = cam.pos + self.o
-      self.struts[1].ends[1].v = player.v
-      self.struts[#self.struts].ends[2].v = vec2(0, 0)
+      send1 = self.struts[i].ends[1]
+      send2 = self.struts[i].ends[2]
+      send1.lastpos = send1.p
+      send2.lastpos = send2.p
+      send1.p = send1.p + (send1.v * send1.dt)
+      send2.p = send2.p + (send2.v * send2.dt)
     end
+    self.struts[1].ends[1].p = player.p + vec2(4, 5)
+    self.struts[#self.struts].ends[2].p = cam.pos + self.o
+    self.struts[1].ends[1].v = player.v
+    self.struts[#self.struts].ends[2].v = vec2(0, 0)
+    -- position based forces are then applied
     for i = 1, #self.struts, 1 do
+      send1 = self.struts[i].ends[1]
+      send2 = self.struts[i].ends[2]
       local strutforces = self.struts[i]:calculateforces()
-      self.struts[i].ends[1].f += strutforces
-      self.struts[i].ends[2].f -= strutforces
-      self.struts[i].ends[1].f += (vec2(0, self.struts[i].ends[1].g) * self.struts[i].ends[1].m)
-      self.struts[i].ends[2].f += (vec2(0, self.struts[i].ends[1].g) * self.struts[i].ends[1].m)
+      send1.f += strutforces
+      send2.f -= strutforces
+      send1.f += (vec2(0, send1.g) * send1.m)
+      send2.f += (vec2(0, send1.g) * send1.m)
     end
+    -- finally, velocities are calculated
     for i = 1, #self.struts, 1 do
-      self.struts[i].ends[1].v = self.struts[i].ends[1].v + (self.struts[i].ends[1].f / self.struts[i].ends[1].m * self.struts[i].ends[1].dt) - (self.struts[i].ends[1].v * self.struts[i].ends[1].damp*self.struts[i].ends[1].dt)
-      self.struts[i].ends[2].v = self.struts[i].ends[2].v + (self.struts[i].ends[2].f / self.struts[i].ends[2].m * self.struts[i].ends[2].dt) - (self.struts[i].ends[2].v * self.struts[i].ends[2].damp*self.struts[i].ends[2].dt)
-      self.struts[i].ends[1].f = vec2(0, 0)
-      self.struts[i].ends[2].f = vec2(0, 0)
-      self.struts[1].ends[1].p = player.p + vec2(4, 5)
-      self.struts[#self.struts].ends[2].p = cam.pos + self.o
+      send1 = self.struts[i].ends[1]
+      send2 = self.struts[i].ends[2]
+      send1.v = send1.v + (send1.f / send1.m * send1.dt) - (send1.v * send1.damp*send1.dt)
+      send2.v = send2.v + (send2.f / send2.m * send2.dt) - (send2.v * send2.damp*send2.dt)
+      send1.f = vec2(0, 0)
+      send2.f = vec2(0, 0)
+      self.struts[i].ends[1] = send1
+      self.struts[i].ends[2] = send2
     end
+    self.struts[1].ends[1].p = player.p + vec2(4, 5)
+    self.struts[#self.struts].ends[2].p = cam.pos + self.o
   end,
   draw = function(self)
     pset(-128, 128, 13)
