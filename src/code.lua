@@ -170,16 +170,16 @@ c_state = {
   parent = nil,
   currentstate = nil,
   states = {
-	default = {
+		default = {
 	  name = "rest",
 	  rules = {
-		function(self)
+			function(self)
 		  --put transitional logic here
-		  return "rest"
-		end
-	  }
-	}
-  },
+				return "rest"
+			end
+	  	}
+		}
+	},
   --Why do we use o.states.default instead of self.states.default (157)
   new = function(self, o)
 	local o = o or {}
@@ -332,172 +332,8 @@ c_player = c_entity:new({
   	hitbox = {o = vec2(0, 0), w = 8, h = 8}
   }
 	},
-	anims = {
-		walk = c_anim:new({
-			frames = {2, 3, 4},
-			fc = 3
-		}),
-	hold = c_anim:new({
-			frames = {5, 6, 7},
-			fc = 3
-		}),
-	shimmy = c_anim:new({
-	  frames = {8, 9, 10},
-	  fc = 3
-	}),
-	falling = c_anim:new({
-	  frames = {11, 12},
-	  fc = 2
-	})
-	},
-  statemachine = c_state:new({
-	name = "states",
-	states = {
-	  default = {
-		name = "default",
-		rules = {
-		  function(p)
-			if abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
-			  return "walk"
-			  end
-			end,
-      function(p)
-      if p.v.y > 0 and p.grounded == false then
-        return "falling"
-      end
-      end,
-      function(p)
-        if (p.v.y < 0) return "jumping"
-      end
-		  }
-		},
-	  walk = {
-		name = "walk",
-		rules = {
-			function(p)
-				if abs(p.v.x) <= 0.01 and p.holding == false then
-					return "default"
-				end
-			end,
-			function(p)
-				if abs(p.v.x) <= 0.01 and p.holding == true then
-					return "hold"
-				end
-			end,
-      function(p)
-        if p.v.y < 0 and p.grounded then
-          return "jumping"
-        end
-      end
-		}
-	  },
-    jumping = {
-      name = "jumping",
-      rules = {
-        function(p)
-          if (p.v.y > 0) then
-            return "falling"
-          end
-        end,
-        function(p)
-          if (p.holding) then
-            return "hold"
-          end
-        end
-      }
-    },
-	  hold = {
-		name = "hold",
-		rules = {
-      function(p)
-      if p.v.y < 0 and p.holding == false then
-        return "falling"
-      end
-      end,
-		  function(p)
-			if abs(p.v.x) <= 0.01 and p.holding == false then
-			  return "default"
-			end
-		  end,
-		  function(p)
-			if p.v.x >= 0.01 and p.holding == true then
-			  return "shimmyr"
-			end
-			if p.v.y <= -0.01 and p.holding == true then
-			  return "shimmyl"
-			end
-		  end,
-      function(p)
-      if (not p.holding) return "default"
-      end
-		}
-	  },
-	  shimmyl = {
-		name = "shimmyl",
-		rules = {
-		  function(p)
-			if abs(p.v.x) < 0.01 and p.holding == true then
-			  return "hold"
-			end
-		  end,
-		  function(p)
-			if (not p.holding) return "default"
-		  end,
-		  function(p)
-			if not p.holding and p.v.y < 0.0 then
-			  return "falling"
-			end
-		  end
-		}
-	  },
-	  shimmyr = {
-		name = "shimmyr",
-		rules = {
-		  function(p)
-			if abs(p.v.x) < 0.01 and p.holding == true then
-			  return "hold"
-			  end
-		  end,
-		  function(p)
-			if (not p.holding) return "default"
-		  end,
-		  function(p)
-			if not p.holding and p.v.y < 0.0 then
-			  return "falling"
-			end
-		  end
-		}
-	  },
-	  falling = {
-		name = "falling",
-		rules = {
-		  function(p)
-			if (p.grounded) then
-        local particle2 = smokepuff:new({
-          p = player.p,
-          v = vec2(-2, 0),
-          dt = 1
-        })
-        local particle = smokepuff:new({
-          p = player.p,
-          v = vec2(2, 0),
-          dt = 1
-        })
-        add(particles, particle)
-        add(particles, particle2)
-        return "default"
-      end
-		  end,
-      function(p)
-      if (p.holding) return "hold"
-      end,
-      function(p)
-      if (p.v.y < 0) return "jumping"
-      end
-		}
-	  }
-	}
-  }),
+	anims = nil,
+  statemachine = nil,
 	name = "player",
 	spd = 0.5,
 	jump_force = 2,
@@ -548,7 +384,7 @@ c_player = c_entity:new({
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
 		self.can_jump = self.num_jumps < self.max_jumps and
-			jump_window and self.stamina >= 0 and 
+			jump_window and self.stamina >= 0 and
 			not self.holding and
 			self.jump_newly_pressed
 		if not jump_window then self.jumping = false end
@@ -581,6 +417,178 @@ c_player = c_entity:new({
 			end
 			yield()
 		end
+	end,
+	new = function(self, o)
+		local o = o or {}
+		setmetatable(o, self)
+		self.__index = self
+		o.statemachine = c_state:new({
+		name = "states",
+		states = {
+		  default = {
+			name = "default",
+			rules = {
+				function(p)
+					if abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
+						return "walk"
+				  end
+				end,
+	      function(p)
+	      	if p.v.y > 0 and p.grounded == false then
+	        	return "falling"
+	      	end
+	      end,
+	      function(p)
+	        if (p.v.y < 0) return "jumping"
+	      end
+			 }
+		},
+		walk = {
+			name = "walk",
+			rules = {
+				function(p)
+					if abs(p.v.x) <= 0.01 and p.holding == false then
+						return "default"
+					end
+				end,
+				function(p)
+					if abs(p.v.x) <= 0.01 and p.holding == true then
+						return "hold"
+					end
+				end,
+		    function(p)
+		       if p.v.y < 0 and p.grounded then
+		         return "jumping"
+		       end
+		     end
+			}
+		},
+		jumping = {
+	  	name = "jumping",
+	    rules = {
+	    	function(p)
+	        if (p.v.y > 0) then
+	        	return "falling"
+	        end
+	      end,
+	      function(p)
+	      	if (p.holding) then
+	        	return "hold"
+	        end
+	      end
+	    }
+	  },
+		hold = {
+			name = "hold",
+			rules = {
+	    	function(p)
+	      	if p.v.y < 0 and p.holding == false then
+	        	return "falling"
+	      	end
+	      end,
+			  function(p)
+					if abs(p.v.x) <= 0.01 and p.holding == false then
+				  	return "default"
+					end
+			  end,
+			  function(p)
+					if p.v.x >= 0.01 and p.holding == true then
+				  	return "shimmyr"
+					end
+					if p.v.y <= -0.01 and p.holding == true then
+				  	return "shimmyl"
+					end
+			  end,
+	      function(p)
+	      		if (not p.holding) return "default"
+	      end
+			}
+		},
+		shimmyl = {
+			name = "shimmyl",
+			rules = {
+			  function(p)
+					if abs(p.v.x) < 0.01 and p.holding == true then
+				  	return "hold"
+					end
+			  end,
+			  function(p)
+					if (not p.holding) return "default"
+			  end,
+			  function(p)
+					if not p.holding and p.v.y < 0.0 then
+				  	return "falling"
+					end
+			  end
+			}
+		},
+		shimmyr = {
+			name = "shimmyr",
+			rules = {
+			  function(p)
+					if abs(p.v.x) < 0.01 and p.holding == true then
+				  	return "hold"
+				  end
+			  end,
+			  function(p)
+					if (not p.holding) return "default"
+			  end,
+			  function(p)
+					if not p.holding and p.v.y < 0.0 then
+				  	return "falling"
+					end
+			  end
+			}
+		 },
+		 falling = {
+			 name = "falling",
+			 rules = {
+			 	function(p)
+					if (p.grounded) then
+	        	local particle2 = smokepuff:new({
+	          	p = player.p,
+	          	v = vec2(-2, 0),
+	          	dt = 1
+	        	})
+		        local particle = smokepuff:new({
+		          p = player.p,
+		          v = vec2(2, 0),
+		          dt = 1
+		        })
+	        add(particles, particle)
+	        add(particles, particle2)
+	        return "default"
+	      end
+			 end,
+	     function(p)
+				 if (p.holding) return "hold"
+	     end,
+	     function(p)
+				 if (p.v.y < 0) return "jumping"
+	     end
+		 	}
+		 }
+		}
+	  })
+		o.anims = {
+			walk = c_anim:new({
+				frames = {2, 3, 4},
+				fc = 3
+			}),
+			hold = c_anim:new({
+				frames = {5, 6, 7},
+				fc = 3
+			}),
+			shimmy = c_anim:new({
+		  	frames = {8, 9, 10},
+		  	fc = 3
+			}),
+			falling = c_anim:new({
+		  	frames = {11, 12},
+		  	fc = 2
+			})
+		}
+		return o
 	end,
 	move = function(self)
 		self:input()
@@ -681,7 +689,6 @@ function update_game()
 	end)
 	player:move()
   --test particles
-  if (btnp(5)) c_strut:test()
   solveparticles()
   --coresume(parts)
 	cam:update(player.p)
@@ -694,6 +701,8 @@ function draw_game()
 	map(0,0,0,0,64,64) -- draw level
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
+
+  toprope:drawrope()
 	player:draw()
   drawparticles()
 	draw_hud()
@@ -704,10 +713,12 @@ end
 function init_game()
 	_update = update_game
 	_draw = draw_game
+
 	load_level()
 	player=c_player:new({ p = vec2(0, display-(8*2)) })
   player.statemachine.parent = player
-  --parts = cocreate(solveparticles)
+  toprope = rope:create()
+  parts = cocreate(solveparticles)
 end
 
 function draw_hud()
