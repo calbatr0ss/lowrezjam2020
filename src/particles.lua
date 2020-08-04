@@ -293,12 +293,12 @@ rope = {
     local offset = vec2(32, -20)
     for i = 1, 10, 1 do
       add(v, c_particle:new({
-        p = player.p - ((cam.pos + offset) * (i * 3)),
+        p = player.p - ((cam.pos + offset) * (i * 0.1)),
         v = cam.pos + vec2(32, -20),
         g = 9.8,
         damp = 1,
         m = 1,
-        c = 9,
+        c = rnd(16),
         f = vec2(0, 0),
         dt = 0.1
       }))
@@ -306,7 +306,7 @@ rope = {
     local r = rope:new({
       verts = v,
       ks = 10,
-      kd = 3,
+      kd = 2,
       ideal = 0.1,
       o = offset
     })
