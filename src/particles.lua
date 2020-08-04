@@ -120,7 +120,7 @@ smokepuff = s_particle:new({
 
 -- solve all particles via their preferred solver
 function solveparticles()
---  while true do
+  while true do
     if (#particles > 0) then
       for j = 1, #particles, 1 do
         particles[j]:solve()
@@ -133,8 +133,8 @@ function solveparticles()
         j += 1
       end
     end
-  --  yield();
- --end
+    yield();
+ end
 end
 
 -- A singular spring strut
@@ -298,7 +298,7 @@ rope = {
         g = 9.8,
         damp = 1,
         m = 1,
-        c = rnd(16),
+        c = 9,
         f = vec2(0, 0),
         dt = 0.1
       }))

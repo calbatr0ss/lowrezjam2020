@@ -689,8 +689,8 @@ function update_game()
 	end)
 	player:move()
   --test particles
-  solveparticles()
-  --coresume(parts)
+  --solveparticles()
+  coresume(parts)
 	cam:update(player.p)
 end
 
