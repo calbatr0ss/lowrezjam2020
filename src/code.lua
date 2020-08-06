@@ -93,7 +93,8 @@ function vnorm(vec)
 end
 
 cam = {
-	pos = vec2(0, 0),
+	-- todo use the offset here
+	pos = vec2(0, 0-1280),
 	lerp = 0.15,
 	update = function(self, track_pos)
 		-- direct follow
@@ -233,8 +234,8 @@ c_object = c_sprite:new({
 		while right_tile_collide(self) do self.p.x -= 1 end
 		while left_tile_collide(self) do self.p.x += 1 end
 		-- push out of left boundary... todo: needed?
-		while calc_edges(self).l < 0 do self.p.x += 1 end
-		while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
+		-- while calc_edges(self).l < 0 do self.p.x += 1 end
+		-- while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
 		self.p.y = flr(self.p.y) -- fix short bird issue
 	end,
 	collide = function(self, other)
@@ -666,9 +667,31 @@ levels = {
 				vec2(-1, -1)
 			}
 		}
+	},
+	{
+		name = "Level 2",
+		width = 2,
+		height = 2,
+		spawn = {
+			screen = vec2(1, 0),
+			pos = vec2(6*8, 6*8)
+		},
+		screens = {
+			--width
+			{
+				--height
+				vec2(-1, -1),
+				vec2(0, 0),
+			},
+			{
+				vec2(-1, -1),
+				vec2(0, 1),
+			}
+		}
 	}
 }
 level = nil
+draw_offset = -1000
 
 function load_level(level_number)
 	reload_map()
@@ -684,7 +707,7 @@ function load_level(level_number)
 					for sy = 0, 8 do
 						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
 						-- printh("mapped_pos: "..(mapped_pos.x*8)..","..(mapped_pos.y*8))
-						local world_pos = vec2(x*8*8+sx*8, y*8*8+sy*8)
+						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
 						-- printh("world_pos: "..world_pos.x..","..world_pos.y)
 						local tile = mget(mapped_pos.x, mapped_pos.y)
 						if fget(tile, 2) then
@@ -692,7 +715,21 @@ function load_level(level_number)
 							-- fixme: how to get hitbox and shit?
 							add(actors, c_hold:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
 						end
-						mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
+						if tile == 1 then
+							foreach(classes, function(c)
+								load_obj(world_pos, c)
+								mset(mapped_pos.x, mapped_pos.y, 0)
+							end)
+						elseif tile == 24 then
+							add(actors, c_object:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
+
+							printh('here')
+						end
+						
+						-- mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
+						printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
+						-- mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
+						-- fixme: can't mset off the grid!
 					end
 				end
 			end
@@ -700,10 +737,14 @@ function load_level(level_number)
 	end
 end
 
-function load_obj(x, y, o)
+function load_obj(pos, o)
 	if o.name == "hold" then
 		--add(actors, c_hold:new({ x = x * 8, y = y * 8}))
 		-- add(actors, c_hold:new({p = vec2(x, y)}))
+	end
+	if o.name == "player" then
+		printh("added player")
+		player = o:new({p = pos})
 	end
 end
 
@@ -715,7 +756,7 @@ function draw_level(level_number)
 			local screen = level.screens[x+1][y+1]
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
-				map(screen.x*8, screen.y*8, x*8*8, y*8*8, 8, 8)
+				map(screen.x*8, screen.y*8, x*64, y*64+draw_offset, 8, 8)
 			end
 		end
 	end
@@ -744,6 +785,7 @@ function update_game()
 		-- a:move()
 		player:collide(a)
 	end)
+	-- printh("player pos: "..player.p.x..","..player.p.y)
 	player:move()
 	coresume(parts)
 	cam:update(player.p)
@@ -763,7 +805,6 @@ function draw_game()
 	drawparticles()
 	cam:update(player.p)
 	draw_hud()
-	if debug then print(debug) end
 end
 
 function init_game()
@@ -772,7 +813,7 @@ function init_game()
 
 	load_level(1)
 	-- player=c_player:new({ p = vec2(0, display-(8*2)) })
-	player = c_player:new({ p = vec2(level.spawn.screen.x*64+level.spawn.pos.x, level.spawn.screen.y*64+level.spawn.pos.y)})
+	-- player = c_player:new({ p = vec2(level.spawn.screen.x*64+level.spawn.pos.x, level.spawn.screen.y*64+level.spawn.pos.y)})
 	player.statemachine.parent = player
 	toprope = rope:create()
 	parts = cocreate(solveparticles)
