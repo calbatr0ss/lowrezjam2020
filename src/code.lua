@@ -8,6 +8,7 @@
   -- sound effects
   -- music
 
+coroutines = {}
 player = nil
 g_force = 0.2
 display = 64
@@ -73,10 +74,10 @@ function vdot(v1, v2)
 	return (v1.x * v2.x) + (v1.y * v2.y)
 end
 
-function vcross(v1, v2)
+--[[function vcross(v1, v2)
 	--as a 3d concept, we'll hold of on implimenting this
 	return 0
-end
+end--]]
 
 function vmag(v)
 	local m = max(abs(v.x), abs(v.y))
@@ -119,7 +120,6 @@ c_sprite = {
 	sprites = {
 		default = {
 			number = 0,
-			--hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
 			hitbox = {o = vec2(0, 0), w = 8, h = 8}
 		}
 	},
@@ -127,12 +127,6 @@ c_sprite = {
 	name = "sprite",
 	parent = nil,
 	state = "rest",
-	--[[
-	x = 0
-	y = 0
-	dx = 0
-	dy = 0
-	--]]
 	p = vec2(0, 0),
 	v = vec2(0, 0),
 	new = function(self, o)
@@ -190,6 +184,7 @@ c_state = {
 
 
 -- animation, inherites from sprite
+-- rewrite this in the future, post-jam
 c_anim = c_sprite:new({
 	name = "animation",
 	fr = 15,
@@ -254,12 +249,69 @@ c_hold = c_object:new({
 	sprites = {
 		default = {
 			number = 33,
-			--hitbox = { ox = 0 , oy = 0, w = 8, h = 8 }
+			hitbox = {o = vec2(0, 0), w = 8, h = 8 }
+		}
+	},
+})
+add(classes, c_hold:new({}))
+
+c_granola = c_object:new({
+	name = "granola",
+	sprites = {
+		default = {
+			number = 42,
 			hitbox = {o = vec2(0, 0), w = 8, h = 8 }
 		}
 	}
 })
-add(classes, c_hold:new({}))
+add(classes, c_granola:new({}))
+
+c_chalkhold = c_object:new({
+	name = "chalkhold",
+	sprites = {
+		default = {
+			number = 55,
+			hitbox = {o = vec2(0, 0), w = 8, h = 8 }
+		}
+	},
+	anims = {
+		drip = c_anim:new({
+			frames = {55, 56, 57},
+			fc = 3,
+			fr = 2
+		})
+	},
+	activated = false,
+	anim = function(self)
+		if self.activated then
+			self.anims.drip.playing = true
+			self.anims.drip:loopforward()
+			frame = self.anims.drip.frames[self.anims.drip.currentframe]
+			self.sprites.default.number = frame
+			spr(self.sprite.number, self.p.x, self.p.y, 1, 1, self.flip)
+		elseif player.has_chalk then
+			self.sprites.default.number = 37
+		elseif not player.has_chalk then
+				self.sprites.default.number = 38
+		end
+		spr(self.sprite.number, self.p.x, self.p.y, 1, 1, self.flip)
+	end,
+	draw = function(self)
+		self:anim()
+	end
+})
+add(classes, c_chalkhold:new({}))
+
+c_chalk = c_object:new({
+	name = "chalk",
+	sprites = {
+		default = {
+			number = 58,
+			hitbox = {o = vec2(0, 0), w = 8, h = 8 }
+		}
+	}
+})
+add(classes, c_chalk:new({}))
 
 -- entity, inherits from object
 c_entity = c_object:new({
@@ -337,6 +389,9 @@ c_player = c_entity:new({
 	jump_newly_pressed = false,
 	dead = false,
 	on_hold = false,
+	on_chalkhold = false,
+	chalkhold = nil,
+	has_chalk = false,
 	holding = false,
 	stamina = 100,
 	max_stamina = 100,
@@ -383,16 +438,28 @@ c_player = c_entity:new({
 			self.v.y = 0 -- reset dy before using jump_force
 			self.v.y -= self.jump_force
 			self.stamina -= self.jump_cost
+			sfx(3, -1, 0, 14)
+		end
+
+		-- Shake the hud if you run out of stamina
+		if self.stamina <= 0 and btn(input.x) and self.jump_newly_pressed then
+			hud:shakebar()
 		end
 
 		-- hold
-		if btn(input.o) and self.on_hold then
-			self.holding = true
-			-- freeze position
-			self.v.x = 0
-			self.v.y = 0
-			-- reset jump
-			self.num_jumps = 0
+		if btn(input.o) then
+			if self.on_hold then
+				self.holding = true
+				-- freeze position
+				self.v.x = 0
+				self.v.y = 0
+				-- reset jump
+				self.num_jumps = 0
+			elseif self.on_chalkhold and self.has_chalk then
+				self.chalkhold.activated = true
+				sfx(5)
+				self.has_chalk = false
+			end
 		else
 			self.holding = false
 		end
@@ -440,6 +507,8 @@ c_player = c_entity:new({
 					end,
 					function(p)
 						if abs(p.v.x) <= 0.01 and p.holding == true then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
 							return "hold"
 						end
 					end,
@@ -460,6 +529,8 @@ c_player = c_entity:new({
 					end,
 					function(p)
 						if (p.holding) then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
 							return "hold"
 						end
 					end
@@ -496,6 +567,8 @@ c_player = c_entity:new({
 				rules = {
 					function(p)
 						if abs(p.v.x) < 0.01 and p.holding == true then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
 							return "hold"
 						end
 					end,
@@ -514,6 +587,8 @@ c_player = c_entity:new({
 				rules = {
 					function(p)
 						if abs(p.v.x) < 0.01 and p.holding == true then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
 							return "hold"
 						end
 					end,
@@ -542,13 +617,18 @@ c_player = c_entity:new({
 								v = vec2(2, 0),
 								dt = 1
 							})
+							sfx(1, -1, 0, 18)
 							add(particles, particle)
 							add(particles, particle2)
 							return "default"
 						end
 					end,
 					function(p)
-						if (p.holding) return "hold"
+						if (p.holding) then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
+							return "hold"
+						end
 					end,
 					function(p)
 						if (p.v.y < 0) return "jumping"
@@ -597,6 +677,31 @@ c_player = c_entity:new({
 				self.on_hold = true
 			end
 		end
+		if c_entity.collide(self, actor) then
+			if actor.name == "granola" then
+				self.stamina = self.max_stamina
+				sfx(2, -2)
+				sfx(2, -1, 0, 9)
+				del(actors, actor)
+			end
+		end
+		if c_entity.collide(self, actor) then
+			if actor.name == "chalk" then
+				self.has_chalk = true
+				sfx(4, -1, 0, 10)
+				del(actors, actor)
+			end
+		end
+		if c_entity.collide(self, actor) then
+			if actor.name == "chalkhold" then
+				if actor.activated then
+					self.on_hold = true
+				elseif not actor.activated then
+					self.on_chalkhold = true
+					self.chalkhold = actor
+				end
+			end
+		end
 	end,
 	die = function(self)
 		sfx(0)
@@ -617,10 +722,11 @@ c_player = c_entity:new({
 			self.anims.walk.playing = true
 			self.anims.walk:loopforward()
 			frame = self.anims.walk.frames[self.anims.walk.currentframe]
-			self.sprites.walk.number = self.anims.walk.currentframe
+			self.sprites.walk.number = frame
 			self.sprite = self.sprites.walk
 		elseif self.state == "hold" then
 			self.sprite = self.sprites.hold
+			if (self.jump_newly_pressed) hud:shakehand()
 		elseif self.state == "shimmyl" then
 			self.sprite = self.sprites.shimmy
 		elseif self.state == "shimmyr" then
@@ -656,6 +762,12 @@ function load_obj(o, x, y)
 	if o.name == "hold" then
 		--add(actors, c_hold:new({ x = x * 8, y = y * 8}))
 		add(actors, c_hold:new({p = vec2(x * 8, y * 8)}))
+	elseif o.name == "granola" then
+		add(actors, c_granola:new({p = vec2(x*8, y*8)}))
+	elseif o.name == "chalk" then
+		add(actors, c_chalk:new({p = vec2(x*8, y*8)}))
+	elseif o.name == "chalkhold" then
+		add(actors, c_chalkhold:new({p = vec2(x*8, y*8)}))
 	end
 end
 
@@ -669,19 +781,26 @@ end
 
 function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
+	player.on_chalkhold = false
 	foreach(actors, function(a)
 		-- a:move()
 		player:collide(a)
 	end)
 	player:move()
-	coresume(parts)
+
+	--if (btnp(5)) hud:shakehand()
+	--if (btnp(4)) hud:shakebar()
+	--coresume(parts)
+	--coresume(shake)
+	resumecoroutines()
 	cam:update(player.p)
 end
 
 function draw_game()
 	cls()
-	-- testtiles()
+	--testtiles()
 	-- testanimation()
+	rectfill(0, 0, 64, 64, 14)
 	map(0,0,0,0,64,64) -- draw level
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
@@ -690,7 +809,7 @@ function draw_game()
 	player:draw()
 	drawparticles()
 	cam:update(player.p)
-	draw_hud()
+	hud:draw()
 	if debug then print(debug) end
 end
 
@@ -701,25 +820,93 @@ function init_game()
 	load_level()
 	player=c_player:new({ p = vec2(0, display-(8*2)) })
 	player.statemachine.parent = player
+	hud = c_hud:new()
 	toprope = rope:create()
 	parts = cocreate(solveparticles)
+	add(coroutines, parts)
 end
 
+c_hud = c_object:new({
+	baro = vec2(0, 0),
+	hando = vec2(0, 0),
+	draw = function(self)
+		rectfill(
+			cam.pos.x + self.baro.x,
+			cam.pos.y + self.baro.y,
+			cam.pos.x + 26 + self.baro.x,
+			cam.pos.y + 2 + self.baro.y,
+			1
+		)
+		line(
+			cam.pos.x + 1 + self.baro.x,
+			cam.pos.y + 1 + self.baro.y,
+			cam.pos.x + 25 + self.baro.x,
+			cam.pos.y + 1 + self.baro.y,
+			8
+		)
+		if player.stamina > 0 then
+			line(
+				cam.pos.x + 1 + self.baro.x,
+				cam.pos.y + 1 + self.baro.y,
+				cam.pos.x + mid(1, (player.stamina / 4), 25) + self.baro.x,
+				cam.pos.y + 1 + self.baro.y,
+				11
+			)
+		end
+		-- I think I like it better without the rect?
+		-- grip icon
+		--[[rectfill(
+			cam.pos.x + display - 8,
+			cam.pos.y,
+			cam.pos.x + display,
+			cam.pos.y + 7,
+			1
+		)--]]
+		if player.holding then
+			spr(50, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
+		else
+			spr(49, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
+		end
+	end,
+	shakehand = function(self)
+		self.hando = vec2(0, 0)
+		--Should check if there is already a coroutine running , and either delete it
+		--or resume it. This prevents a crash in the event you spam the button too much.
+		--Fix this post jam
+		sfx(8, -2)
+		sfx(8, -1, 0, 12)
+		shakeh = cocreate(sinxshake)
+		coresume(shakeh, self.hando, 2, 2, 10)
+		add(coroutines, shakeh)
+	end,
+	shakebar = function(self)
+		self.baro = vec2(0, 0)
+		--See note above
+		sfx(7, -2)
+		sfx(7, -1, 0, 12)
+		shakeb = cocreate(sinxshake)
+		coresume(shakeb, self.baro, 2, 2, 10)
+		add(coroutines, shakeb)
+	end
+})
+add(classes, c_hud:new({}))
+
+--[[
 function draw_hud()
 	-- stamina bar
 	rectfill(
-		cam.pos.x,
-		cam.pos.y,
-		cam.pos.x + 26,
-		cam.pos.y + 2,
+		cam.pos.x + baro.x,
+		cam.pos.y + baro.y,
+		cam.pos.x + 26 + baro.x,
+		cam.pos.y + 2 + baro.y,
 		1
 	)
 	if player.stamina > 0 then
-		rectfill(
-			cam.pos.x + 1,
-			cam.pos.y + 1,
-			cam.pos.x + mid(1, (player.stamina / 4), 25),
-			cam.pos.y + 1,
+		line(
+			cam.pos.x + 1 + hando.x,
+			cam.pos.y + 1 + hando.y,
+			cam.pos.x + mid(1, (player.stamina / 4), 25) + hando.x,
+			cam.pos.y + 1 + hando.y,
 			11
 		)
 	end
@@ -738,3 +925,4 @@ function draw_hud()
 		spr(49, cam.pos.x + display - 8, cam.pos.y)
 	end
 end
+--]]
