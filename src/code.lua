@@ -218,6 +218,7 @@ c_object = c_sprite:new({
 	hp = 1,
 	move = function(self)
 		self.p.y += self.v.y
+		-- todo make this into a coroutine to do one of each
 		while ceil_tile_collide(self) do self.p.y += 1 end
 		while floor_tile_collide(self) do self.p.y -= 1 end
 		self.grounded = on_ground(self)
@@ -228,6 +229,7 @@ c_object = c_sprite:new({
 		while left_tile_collide(self) do self.p.x += 1 end
 		-- push out of left boundary... todo: needed?
 		while calc_edges(self).l < 0 do self.p.x += 1 end
+		while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
 		self.p.y = flr(self.p.y) -- fix short bird issue
 	end,
 	collide = function(self, other)
@@ -744,23 +746,70 @@ c_player = c_entity:new({
 })
 add(classes, c_player:new({}))
 
-function load_level()
-	for x = 0, display do
-		for y = 0, display do
-			local t = mget(x, y)
-			foreach(classes, function(c)
-				if c.sprite.number == t and c.sprite.number ~= 0 then
-					load_obj(c, x, y)
-					mset(x, y, 0)
+
+levels = {
+	{
+		name = "Level 1",
+		width = 2,
+		height = 4,
+		spawn = {
+			screen = vec2(1, 0),
+			pos = vec2(6*8, 6*8)
+		},
+		screens = {
+			--width
+			{
+				--height
+				vec2(0, 0),
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(-1, -1)
+			},
+			{
+				vec2(0, 1),
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(-1, -1)
+			}
+		}
+	}
+}
+level = nil
+
+function load_level(level_number)
+	reload_map()
+	level = levels[level_number]
+	for x = 0, level.width - 1 do
+		for y = 0, level.height - 1 do
+			local screen = level.screens[x+1][y+1]
+			-- ignore screens set to tombstone vector vec2(-1, -1)
+			if screen.x >= 0 and screen.y >= 0 then
+				printh(x..","..y)
+				printh("screen_pos: "..screen.x..","..screen.y)
+				for sx = 0, 8 do
+					for sy = 0, 8 do
+						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
+						-- printh("mapped_pos: "..(mapped_pos.x*8)..","..(mapped_pos.y*8))
+						local world_pos = vec2(x*8*8+sx*8, y*8*8+sy*8)
+						-- printh("world_pos: "..world_pos.x..","..world_pos.y)
+						local tile = mget(mapped_pos.x, mapped_pos.y)
+						if fget(tile, 2) then
+							printh("adding "..tile)
+							-- fixme: how to get hitbox and shit?
+							add(actors, c_hold:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
+						end
+						mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
+					end
 				end
-			end)
+			end
 		end
 	end
 end
 
-function load_obj(o, x, y)
+function load_obj(x, y, o)
 	if o.name == "hold" then
 		--add(actors, c_hold:new({ x = x * 8, y = y * 8}))
+    -- add(actors, c_hold:new({p = vec2(x, y)}))
 		add(actors, c_hold:new({p = vec2(x * 8, y * 8)}))
 	elseif o.name == "granola" then
 		add(actors, c_granola:new({p = vec2(x*8, y*8)}))
@@ -769,6 +818,29 @@ function load_obj(o, x, y)
 	elseif o.name == "chalkhold" then
 		add(actors, c_chalkhold:new({p = vec2(x*8, y*8)}))
 	end
+end
+
+-- fixme: can't grab holds because no load
+function draw_level(level_number)
+	level = levels[level_number]
+	for x = 0, level.width - 1 do
+		for y = 0, level.height - 1 do
+			local screen = level.screens[x+1][y+1]
+			-- ignore screens set to tombstone vector vec2(-1, -1)
+			if screen.x >= 0 and screen.y >= 0 then
+				map(screen.x*8, screen.y*8, x*8*8, y*8*8, 8, 8)
+			end
+		end
+	end
+end
+
+-- reset the map from rom (if you make in-ram changes)
+function reload_map()
+	reset(0x2000, 0x2000, 0x1000)
+	poke(0x5f2c,3) -- enable 64 bit mode
+	-- set lavender to the transparent color
+	palt(0, false)
+	palt(13, true)
 end
 
 function _init()
@@ -800,8 +872,9 @@ function draw_game()
 	cls()
 	--testtiles()
 	-- testanimation()
-	rectfill(0, 0, 64, 64, 14)
-	map(0,0,0,0,64,64) -- draw level
+	--rectfill(0, 0, 64, 64, 14)
+	--map(0,0,0,0,64,64) -- draw level
+	draw_level(1)
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
 
@@ -817,8 +890,9 @@ function init_game()
 	_update = update_game
 	_draw = draw_game
 
-	load_level()
-	player=c_player:new({ p = vec2(0, display-(8*2)) })
+	load_level(1)
+	-- player=c_player:new({ p = vec2(0, display-(8*2)) })
+	player = c_player:new({ p = vec2(level.spawn.screen.x*64+level.spawn.pos.x, level.spawn.screen.y*64+level.spawn.pos.y)})
 	player.statemachine.parent = player
 	hud = c_hud:new()
 	toprope = rope:create()
