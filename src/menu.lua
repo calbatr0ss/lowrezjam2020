@@ -1,14 +1,83 @@
+c_arrows = c_object:new({
+	yo = 0,
+	y = 21,
+	items = {
+		"music",
+		"level"
+	},
+	index = 2,
+	music = "on",
+	currentitem = "level",
+	moved = function(self)
+		self.y += 20
+	end,
+	moveu = function(self)
+		self.y -= 20
+	end,
+	draw = function(self)
+		print("level: "..levelselection, 15, 22, 1)
+		print("music: "..self.music, 15, 43, 1)
+		self.yo = self.yo + sin(time()) * 0.3
+		if btn(1) then
+			spr(44, 56, self.y + self.yo)
+		else
+			spr(43, 56, self.y + self.yo)
+		end
+		if btn(0) then
+			spr(44, 0, self.y + self.yo, 1, 1, true)
+		else
+			spr(43, 0, self.y + self.yo, 1, 1, true)
+		end
+	end
+})
+
 function init_menu()
-	donothing = 0
+	levelselection = 1
+	camera(0, 0)
+	screen = "menu"
+	_init = init_menu
+	_update = update_menu
+	_draw = draw_menu
+	arrows = c_arrows:new({})
 end
 
 function update_menu()
+	if btnp(input.l) then
+		if (arrows.currentitem == "levels") levelselection -= 1
+		if (arrows.currentitem == "music") arrows.music = "off"
+	elseif btnp(input.r) then
+		if (arrows.currentitem == "levels") levelselection += 1
+		if (arrows.currentitem == "music") arrows.music = "on"
+	end
+	if btnp(input.d) and arrows.index != 1 then
+		arrows:moved()
+		arrows.index -= 1
+	elseif btnp(input.u) and arrows.index != #arrows.items then
+		arrows:moveu()
+		arrows.index += 1
+	end
+	arrows.index = clamp(arrows.index, 1, #arrows.items)
+	arrows.currentitem = arrows.items[arrows.index]
+	if arrows.music == "off" then
+		jukebox:stopplaying()
+	elseif arrows.music == "on" then
+		jukebox.playing = true
+		jukebox:startplayingnow(2, 1000, 7)
+	end
+	levelselection = clamp(levelselection, 1, #levels)
 	if btnp(input.o) or btnp(input.x) then
 		init_game()
 	end
 end
 
 function draw_menu()
-	draw_screen()
+	drawnoodles()
+	spr(1, 45, 0, 1, 1, true, true)
+	if screen == "menu" then
+		--print("level: "..levelselection, 15, 32, 1)
+		arrows:draw()
+		print(arrows.currentitem, 0, 0, 7)
+		jukebox:startplayingnow(2, 0, 7)
+	end
 	update_last_btns()
 end

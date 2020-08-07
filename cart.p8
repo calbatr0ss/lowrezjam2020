@@ -209,12 +209,19 @@ number=58,			hitbox={o=vec2(0,0),w=8,h=8 }
 })
 add(classes,c_chalk:new({}))
 c_jukebox=c_object:new({
-songs={0,6,8},	currentsong=-1,	startplayingnow=function(self,songn,f,chmsk)
+songs={0,6,8},	currentsong=-1,	playing=true,	startplayingnow=function(self,songn,f,chmsk)
+if self.playing then
 if currentsong !=self.songs[songn] then
 music(self.songs[songn],f,chmsk)
 end
 currentsong=self.songs[songn]
-end,})
+end
+end,	stopplaying=function(self)
+self.playing=false
+music(-1,300)
+currentsong=-1
+end
+})
 add(classes,c_jukebox:new({}))
 c_entity=c_object:new({
 name="entity",	spd=1,	topspd=1,	move=function(self)
@@ -639,14 +646,17 @@ end
 function init_game()
 _update=update_game
 _draw=draw_game
-load_level(1)
+load_level(levelselection)
 player=c_player:new({ p=vec2(level.spawn.screen.x*64+level.spawn.pos.x,level.spawn.screen.y*64+level.spawn.pos.y)})
 player.statemachine.parent=player
 hud=c_hud:new()
 five=5
 toprope=rope:create()
+if parts==nil then
 parts=cocreate(solveparticles)
 add(coroutines,parts)
+end
+menuitem(1,"back to menu",init_menu)
 jukebox:startplayingnow(3,2000,11)
 end
 c_hud=c_object:new({
@@ -667,6 +677,7 @@ spr(50,cam.pos.x+display-9+self.hando.x,cam.pos.y+self.hando.y)
 else
 spr(49,cam.pos.x+display-9+self.hando.x,cam.pos.y+self.hando.y)
 end
+if (player.has_chalk) spr(58,cam.pos.x+display-15,cam.pos.y)
 end,	shakehand=function(self)
 self.hando=vec2(0,0)
 sfx(8,-2)
@@ -745,16 +756,74 @@ del(coroutines,c)
 end
 end
 end
+c_arrows=c_object:new({
+yo=0,	y=21,	items={
+"music",		"level"
+},	index=2,	music="on",	currentitem="level",	moved=function(self)
+self.y+=20
+end,	moveu=function(self)
+self.y-=20
+end,	draw=function(self)
+print("level: "..levelselection,15,22,1)
+print("music: "..self.music,15,43,1)
+self.yo=self.yo+sin(time())*0.3
+if btn(1) then
+spr(44,56,self.y+self.yo)
+else
+spr(43,56,self.y+self.yo)
+end
+if btn(0) then
+spr(44,0,self.y+self.yo,1,1,true)
+else
+spr(43,0,self.y+self.yo,1,1,true)
+end
+end
+})
 function init_menu()
-donothing=0
+levelselection=1
+camera(0,0)
+screen="menu"
+_init=init_menu
+_update=update_menu
+_draw=draw_menu
+arrows=c_arrows:new({})
 end
 function update_menu()
+if btnp(input.l) then
+if (arrows.currentitem=="levels") levelselection-=1
+if (arrows.currentitem=="music") arrows.music="off"
+elseif btnp(input.r) then
+if (arrows.currentitem=="levels") levelselection+=1
+if (arrows.currentitem=="music") arrows.music="on"
+end
+if btnp(input.d) and arrows.index !=1 then
+arrows:moved()
+arrows.index-=1
+elseif btnp(input.u) and arrows.index !=#arrows.items then
+arrows:moveu()
+arrows.index+=1
+end
+arrows.index=clamp(arrows.index,1,#arrows.items)
+arrows.currentitem=arrows.items[arrows.index]
+if arrows.music=="off" then
+jukebox:stopplaying()
+elseif arrows.music=="on" then
+jukebox.playing=true
+jukebox:startplayingnow(2,1000,7)
+end
+levelselection=clamp(levelselection,1,#levels)
 if btnp(input.o) or btnp(input.x) then
 init_game()
 end
 end
 function draw_menu()
-draw_screen()
+drawnoodles()
+spr(1,45,0,1,1,true,true)
+if screen=="menu" then
+arrows:draw()
+print(arrows.currentitem,0,0,7)
+jukebox:startplayingnow(2,0,7)
+end
 update_last_btns()
 end
 c_particle={
@@ -983,17 +1052,14 @@ function update_screen()
 if screen=="title" then
 if btnp(input.o) or btnp(input.x) then
 screen="menu"
-_init=init_menu
-_update=update_menu
-_draw=draw_menu
+init_menu()
 end
 end
 update_last_btns()
 end
-function draw_screen()
+function drawnoodles()
 cls(4)
 srand(800)
-local i=0
 for i=0,64,1 do
 local flipx=false
 local flipy=false
@@ -1001,16 +1067,14 @@ if (flr(rnd(2))==1) flipx=true
 if (flr(rnd(2))==1) flipy=true
 spr(23,i%8*8,flr(i/8)*8,1,1,flipx,flipy)
 end
+end
+function draw_screen()
+drawnoodles()
 spr(c_player.sprites.default.number,2*8,7*8,1,1)
 if screen=="title" then
 print("yolo solo",15,20,1)
 print("press ❎/🅾️",11,44,1)
 jukebox:startplayingnow(1,2000,9)
-end
-if screen=="menu" then
-print("menu goes here",5,32,1)
-print(btn(),0,0,7)
-jukebox:startplayingnow(2,0,7)
 end
 update_last_btns()
 end
@@ -1023,22 +1087,22 @@ __gfx__
 00700700d444440d3444440dd4444430d444440d444494dd444494dd444494ddd0eeee0dd0eeee0dd0eeee0dd0e38e30d03e830dd44444400000000000000000
 0000000090330330030330dd9033030d933003300330930d0330930d0330930dd4444930d4444930d4444930d030430dd030430d9030030d0000000000000000
 00000000dd00d00dd0d00ddddd00d0ddd00dd00dd00d00ddd00d00ddd00d00ddd000d90dd000d90dd000d90d900dd0dd900dd0dd9030030d0000000000000000
-000000009444444a5666666657666665ffffffffffffffff44444444999999993bb33b333b333ddd4440044044444444ddddd000000ddddddddddddd00000000
-00000000494444a96666666665766657ffffffffffffffff444444449999999934434434443443dd440dd00d49444444dddd065565500000000000dd00000000
-0000000044944a946666666666576576ffffffffffffffff44444a449999999944444444444443334440dddd44444444dd006055055506556666600d00000000
-00000000444a99446666666666655766fffff999ffffffff4444a4449999999944444494444434304490dddd44444444d0665506555565555555555000000000
-00000000444994446666666666655766ffffffffffffffff444a4444999999aa444444444494400d4440dddd4444444406555060555555656550655000000000
-0000000044a949446666666666576576fffffffffffff9ff44a4444499999a994444444444440ddd4440dddd4449444405565555565555555506555000000000
-000000004a94449466666566657666579999ffffffffffff4a4444449999a999449444444000dddd400ddddd44444444d0555056055550550055550d00000000
-00000000a94444496666666657666665ffffffffffffffffa44444449999a999444444440ddddddd0ddddddd44444444dd000d00d0000d00dd0000dd00000000
-00000000dddddddddddddddddd00ddddddd00dddddaaa00dddd0000ddddddd0dddd0ddddddd0dddddddd00dd0000000000000000000000000000000000000000
-00000000dddd000dddd000ddd0650d00dd06500dda076a0dd807668dd0dddd0ddddd0ddddddd0dddddd0440d0000000000000000000000000000000000000000
-00000000d0006550d006550d00655060dd065550a77665a007866850d00d00dddd00dddddddd0ddddd0344400000000000000000000000000000000000000000
-00000000065005500655555006555050ddd0000da66655a006688500ddd0ddddd00dddddddd0ddddd03b30400000000000000000000000000000000000000000
-000000000655550d0550055006550650dd0ddddda66555ad0668850ddddd0d000d00dddddd0ddddd03bbb00d0000000000000000000000000000000000000000
-00000000055550dd050dd05005550500d060dddd0a500add058008dd0dddd0dddddd0d00ddd0d00d033b030d0000000000000000000000000000000000000000
-00000000d0550ddd00dddd00d000d0dd0550dddd00aaaddd080ddd8dd0d00dddddd000dddddd0d0dd03300dd0000000000000000000000000000000000000000
-00000000dd00dddddddddddddddddddd0000dddddddddddddddddddddd00ddddddd0dddddddddddddd00dddd0000000000000000000000000000000000000000
+dddddddd9444444a5666666657666665ffffffffffffffff44444444999999993bb33b333b333ddd4440044044444444ddddd000000ddddddddddddd00000000
+dddddddd494444a96666666665766657ffffffffffffffff444444449999999934434434443443dd440dd00d49444444dddd065565500000000000dd00000000
+dddddddd44944a946666666666576576ffffffffffffffff44444a449999999944444444444443334440dddd44444444dd006055055506556666600d00000000
+dddddddd444a99446666666666655766fffff999ffffffff4444a4449999999944444494444434304490dddd44444444d0665506555565555555555000000000
+dddddddd444994446666666666655766ffffffffffffffff444a4444999999aa444444444494400d4440dddd4444444406555060555555656550655000000000
+7d7dd7d744a949446666666666576576fffffffffffff9ff44a4444499999a994444444444440ddd4440dddd4449444405565555565555555506555000000000
+d777777d4a94449466666566657666579999ffffffffffff4a4444449999a999449444444000dddd400ddddd44444444d0555056055550550055550d00000000
+dddddddda94444496666666657666665ffffffffffffffffa44444449999a999444444440ddddddd0ddddddd44444444dd000d00d0000d00dd0000dd00000000
+00000000dddddddddddddddddd00ddddddd00dddddaaa00dddd0000ddddddd0dddd0ddddddd0dddddddd00dd0000dddddddddddd000000000000000000000000
+00000000dddd000dddd000ddd0650d00dd06500dda076a0dd807668dd0dddd0ddddd0ddddddd0dddddd0440d0bbb0ddd0000dddd000000000000000000000000
+00000000d0006550d006550d00655060dd065550a77665a007866850d00d00dddd00dddddddd0ddddd034440033bb0dd0bbb0ddd000000000000000000000000
+00000000065005500655555006555050ddd0000da66655a006688500ddd0ddddd00dddddddd0ddddd03b304003bbbb0d033bb0dd000000000000000000000000
+000000000655550d0550055006550650dd0ddddda66555ad0668850ddddd0d000d00dddddd0ddddd03bbb00d03bbb30d03bbbb0d000000000000000000000000
+00000000055550dd050dd05005550500d060dddd0a500add058008dd0dddd0dddddd0d00ddd0d00d033b030d0bbb30dd03bbb0dd000000000000000000000000
+00000000d0550ddd00dddd00d000d0dd0550dddd00aaaddd080ddd8dd0d00dddddd000dddddd0d0dd03300dd03330ddd0bbb0ddd000000000000000000000000
+00000000dd00dddddddddddddddddddd0000dddddddddddddddddddddd00ddddddd0dddddddddddddd00dddd0000dddd0000dddd000000000000000000000000
 00000000dd0d0dddddddddddddddddddddddddddddddddddddddddddddd0000dddd0000dddd0000dddddd000d000000d00000000000000000000000000000000
 00000000d070700ddd0d0d0dddddddddddddddddddddddddddd6ddddd007660dd007660dd007660ddddd06600477774000000000000000000000000000000000
 00000000d0707070d0707070ddddddddddddddddddddddddd6ddd6dd077665500776655007766550ddd07660d044743d00000000000000000000000000000000

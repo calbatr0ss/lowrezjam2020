@@ -320,12 +320,20 @@ add(classes, c_chalk:new({}))
 c_jukebox = c_object:new({
 	songs = {0, 6, 8},
 	currentsong = -1,
+	playing = true,
 	startplayingnow = function(self, songn, f, chmsk)
-		if currentsong != self.songs[songn] then
-			music(self.songs[songn], f, chmsk)
+		if self.playing then
+			if currentsong != self.songs[songn] then
+				music(self.songs[songn], f, chmsk)
+			end
+			currentsong = self.songs[songn]
 		end
-		currentsong = self.songs[songn]
 	end,
+	stopplaying = function(self)
+		self.playing = false
+		music(-1, 300)
+		currentsong = -1
+	end
 })
 add(classes, c_jukebox:new({}))
 
@@ -912,15 +920,19 @@ function init_game()
 	_update = update_game
 	_draw = draw_game
 
-	load_level(1)
+	load_level(levelselection)
 	-- player=c_player:new({ p = vec2(0, display-(8*2)) })
 	player = c_player:new({ p = vec2(level.spawn.screen.x*64+level.spawn.pos.x, level.spawn.screen.y*64+level.spawn.pos.y)})
 	player.statemachine.parent = player
 	hud = c_hud:new()
 	five = 5
 	toprope = rope:create()
-	parts = cocreate(solveparticles)
-	add(coroutines, parts)
+	-- this if statement prevents a bug when resuming after returning to menu
+	if parts == nil then
+		parts = cocreate(solveparticles)
+		add(coroutines, parts)
+	end
+	menuitem(1, "back to menu", init_menu)
 	jukebox:startplayingnow(3, 2000, 11)
 end
 
@@ -956,6 +968,7 @@ c_hud = c_object:new({
 		else
 			spr(49, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
 		end
+		if (player.has_chalk) spr(58, cam.pos.x + display - 15, cam.pos.y)
 	end,
 	shakehand = function(self)
 		self.hando = vec2(0, 0)
