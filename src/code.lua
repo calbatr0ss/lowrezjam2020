@@ -15,6 +15,8 @@ display = 64
 input= { l = 0, r = 1, u = 2, d = 3, o = 4, x = 5 }
 classes = {}
 actors = {}
+start_time = 0
+end_time = 0
 
 -- particles
 particles = {}
@@ -434,6 +436,8 @@ c_player = c_entity:new({
 		if not jump_window then self.jumping = false end
 
 		if self.can_jump and btn(input.x) then
+
+	finish_level()
 			self.jumped_at = time()
 			self.num_jumps += 1
 			self.jumping = true
@@ -804,6 +808,15 @@ function load_level(level_number)
 			end
 		end
 	end
+	start_time = time()
+end
+
+function finish_level()
+	end_time = time()
+
+	local score = end_time - start_time
+	local formatted_time = format_time(score)
+	printh("time taken "..formatted_time.hours..":"..formatted_time.minutes..":"..formatted_time.seconds)
 end
 
 function load_obj(x, y, o)
