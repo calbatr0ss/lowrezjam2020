@@ -84,38 +84,33 @@ s_particle = c_particle:new({
   end
   })
 
+-- Reduce the size of this later?
 smokepuff = s_particle:new({
-  sprites = nil,
+	sprites = {51, 52, 53, 54},
+	flip = false,
   life = 4,
   draw = function(self)
     local time = clamp(self.time, 1, 4)
-    spr(self.sprites[time].number, self.p.x, self.p.y, 1, 1, self.sprites[time].flip)
+		spr(self.sprites[time], self.p.x, self.p.y, 1, 1, self.flip)
   end,
   new = function(self, o)
     local o = o or {}
     setmetatable(o, self)
     self.__index = self
-    o.sprites = {
-      c_sprite:new({
-        number = 51
-      }),
-      c_sprite:new({
-        number = 52
-      }),
-      c_sprite:new({
-        number = 53
-      }),
-      c_sprite:new({
-        number = 54
-      })
-    }
     if o.v.x < 0 then
-      for i = 1, #o.sprites, 1 do
-        o.sprites[i].flip = true
-      end
+			o.flip = true
     end
     return o
   end
+})
+
+airjump = s_particle:new({
+	sprites = {48, 32, 16},
+	life = 3,
+	draw = function(self)
+		local time = clamp(self.time, 1, 4)
+		spr(self.sprites[time], self.p.x, self.p.y)
+	end
 })
 
 -- solve all particles via their preferred solver
@@ -138,6 +133,7 @@ function solveparticles()
 end
 
 -- A singular spring strut
+-- Shorten the amount of code here later
 c_strut = {
   ends = nil,
   ideal = 0,
@@ -158,8 +154,11 @@ c_strut = {
   end,
   solve = function(self)
     --solve function is the same as earlier, only life gets reset
+		local send1 = self.ends[1]
+		local send2 = self.ends[2]
+
     self.time = 0
-    self.ends[1].lastpos = self.ends[1].p
+--[[    self.ends[1].lastpos = self.ends[1].p
     self.ends[2].lastpos = self.ends[2].p
     self.ends[1].p = self.ends[1].p + (self.ends[1].v * self.ends[1].dt)
     self.ends[2].p = self.ends[2].p + (self.ends[2].v * self.ends[2].dt)
@@ -171,7 +170,22 @@ c_strut = {
     self.ends[1].v = self.ends[1].v + (self.ends[1].f / self.ends[1].m * self.ends[1].dt) - (self.ends[1].v * self.ends[1].damp*self.ends[1].dt)
     self.ends[2].v = self.ends[2].v + (self.ends[2].f / self.ends[2].m * self.ends[2].dt) - (self.ends[2].v * self.ends[2].damp*self.ends[2].dt)
     self.ends[1].f = vec2(0, 0)
-    self.ends[2].f = vec2(0, 0)
+    self.ends[2].f = vec2(0, 0)--]]
+		sends1.lastpos = sends1.p
+		sends2.lastpos = sends2.p
+		sends1.p = sends1.p + (sends1.v * sends1.dt)
+		sends2.p = sends2.p + (sends2.v * sends2.dt)
+		local strutforces = self:calculateforces()
+		sends1.f += strutforces
+		sends1.f += (vec2(0, sends1.g) * sends1.m)
+		sends2.f -= strutforces
+		sends2.f += (vec2(0, sends1.g) * sends1.m)
+		sends1.v = sends1.v + (sends1.f / sends1.m * sends1.dt) - (sends1.v * sends1.damp*sends1.dt)
+		sends2.v = sends2.v + (sends2.f / sends2.m * sends2.dt) - (sends2.v * sends2.damp*sends2.dt)
+		sends1.f = vec2(0, 0)
+		sends2.f = vec2(0, 0)
+		self.ends[1] = sends1
+		self.ends[2] = sends2
   end,
   new = function(self, o)
     local o = o or {}

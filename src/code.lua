@@ -393,6 +393,10 @@ c_player = c_entity:new({
 		jump = {
 			number = 2,
 			hitbox = {o = vec2(0, 0), w = 8, h = 8}
+		},
+		dead = {
+			number = 14,
+			hitbox = {o = vec2(0, 0), w = 8, h = 8}
 		}
 	},
 	anims = nil,
@@ -630,7 +634,7 @@ c_player = c_entity:new({
 				name = "falling",
 				rules = {
 					function(p)
-						if (p.grounded) then
+						if (p.grounded) and p.v.y <= 4.5 then
 							local particle2 = smokepuff:new({
 								p = player.p,
 								v = vec2(-2, 0),
@@ -645,6 +649,21 @@ c_player = c_entity:new({
 							add(particles, particle)
 							add(particles, particle2)
 							return "default"
+						elseif (p.grounded) and p.v.y >= 4.5 then
+							for i = 1, 15, 1 do
+								add(particles, c_particle:new({
+									p = player.p + vec2(4, 8),
+									v = vec2(rnd(32)-16,
+									rnd(16)-16),
+									c = 14,
+									life = flr(rnd(15)),
+									damp = rnd(0.5),
+									g = 9.8,
+									dt = 0.25
+								}))
+								sfx(9)
+							end
+							return "dead"
 						end
 					end,
 					function(p)
@@ -655,8 +674,20 @@ c_player = c_entity:new({
 						end
 					end,
 					function(p)
-						if (p.v.y < 0) return "jumping"
+						if (p.v.y < 0) then
+								add(particles, airjump:new({p = player.p, v = player.v * -10}))
+								--spr(16, player.p.x + 4, player.p.y + 10)
+							 return "jumping"
+						end
 					end
+					}
+				},
+				dead = {
+					name = "dead",
+					rules = {
+						function(p)
+							return "dead"
+						end
 					}
 				}
 			}
@@ -763,6 +794,8 @@ c_player = c_entity:new({
 			frame = self.anims.falling.frames[self.anims.falling.currentframe]
 			self.sprites.falling.number = frame
 			self.sprite=self.sprites.falling
+		elseif self.state == "dead" then
+			self.sprite = self.sprites.dead
 		end
 	end
 })
@@ -914,6 +947,7 @@ function draw_game()
 	cam:update(player.p)
 	hud:draw()
 	if debug then print(debug) end
+	print("cpu "..stat(1), player.p.x, player.p.y - 5, 7)
 end
 
 function init_game()

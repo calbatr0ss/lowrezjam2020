@@ -9,9 +9,11 @@ c_arrows = c_object:new({
 	music = "on",
 	currentitem = "level",
 	moved = function(self)
+		sfx(10, -1, 0, 5)
 		self.y += 20
 	end,
 	moveu = function(self)
+		sfx(10, -1, 0, 5)
 		self.y -= 20
 	end,
 	draw = function(self)
@@ -43,9 +45,11 @@ end
 
 function update_menu()
 	if btnp(input.l) then
+		sfx(10, -1, 0, 5)
 		if (arrows.currentitem == "levels") levelselection -= 1
 		if (arrows.currentitem == "music") arrows.music = "off"
 	elseif btnp(input.r) then
+		sfx(10, -1, 0, 5)
 		if (arrows.currentitem == "levels") levelselection += 1
 		if (arrows.currentitem == "music") arrows.music = "on"
 	end
