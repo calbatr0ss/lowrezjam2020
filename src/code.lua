@@ -751,210 +751,6 @@ c_player = c_entity:new({
 })
 add(classes, c_player:new({}))
 
-
-levels = {
-	{
-		name = "Level 1",
-		width = 2,
-		height = 4,
-		spawn = {
-			screen = vec2(1, 0),
-			pos = vec2(6*8, 6*8)
-		},
-		screens = {
-			--width
-			{
-				--height
-				vec2(0, 0),
-				vec2(-1, -1),
-				vec2(-1, -1),
-				vec2(-1, -1)
-			},
-			{
-				vec2(0, 1),
-				vec2(-1, -1),
-				vec2(-1, -1),
-				vec2(-1, -1)
-			}
-		}
-	},
-	{
-		name = "Level 2",
-		width = 2,
-		height = 2,
-		spawn = {
-			screen = vec2(1, 0),
-			pos = vec2(6*8, 6*8)
-		},
-		screens = {
-			--width
-			{
-				--height
-				vec2(-1, -1),
-				vec2(0, 0),
-			},
-			{
-				vec2(-1, -1),
-				vec2(0, 1),
-			}
-		}
-	}
-}
-level = nil
-draw_offset = -1000
-
-function load_level(level_number)
-	reload_map()
-	level = levels[level_number]
-	for x = 0, level.width - 1 do
-		for y = 0, level.height - 1 do
-			local screen = level.screens[x+1][y+1]
-			-- ignore screens set to tombstone vector vec2(-1, -1)
-			if screen.x >= 0 and screen.y >= 0 then
-				printh(x..","..y)
-				printh("screen_pos: "..screen.x..","..screen.y)
-				for sx = 0, 8 do
-					for sy = 0, 8 do
-						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
-						-- printh("mapped_pos: "..(mapped_pos.x*8)..","..(mapped_pos.y*8))
-						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
-						-- printh("world_pos: "..world_pos.x..","..world_pos.y)
-						local tile = mget(mapped_pos.x, mapped_pos.y)
-						if fget(tile, 2) then
-							printh("adding "..tile)
-							-- fixme: how to get hitbox and shit?
-							add(actors, c_hold:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
-						end
-						if tile == 1 then
-							foreach(classes, function(c)
-								load_obj(world_pos, c)
-								mset(mapped_pos.x, mapped_pos.y, 0)
-							end)
-						elseif tile == 24 then
-							add(actors, c_object:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
-
-							printh('here')
-						end
-						
-						-- mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
-						printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
-						-- mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
-						-- fixme: can't mset off the grid!
-					end
-				end
-			end
-		end
-	end
-	start_time = time()
-end
-
-function finish_level()
-	end_time = time()
-
-	local score = end_time - start_time
-	local formatted_time = format_time(score)
-	printh("time taken "..formatted_time.hours..":"..formatted_time.minutes..":"..formatted_time.seconds)
-end
-
-function load_obj(pos, o)
-	if o.name == "hold" then
-		--add(actors, c_hold:new({ x = x * 8, y = y * 8}))
-    -- add(actors, c_hold:new({p = vec2(x, y)}))
-		add(actors, c_hold:new({p = vec2(x * 8, y * 8)}))
-	elseif o.name == "granola" then
-		add(actors, c_granola:new({p = vec2(x*8, y*8)}))
-	elseif o.name == "chalk" then
-		add(actors, c_chalk:new({p = vec2(x*8, y*8)}))
-	elseif o.name == "chalkhold" then
-		add(actors, c_chalkhold:new({p = vec2(x*8, y*8)}))
-	end
-	if o.name == "player" then
-		printh("added player")
-		player = o:new({p = pos})
-	end
-end
-
--- fixme: can't grab holds because no load
-function draw_level(level_number)
-	level = levels[level_number]
-	for x = 0, level.width - 1 do
-		for y = 0, level.height - 1 do
-			local screen = level.screens[x+1][y+1]
-			-- ignore screens set to tombstone vector vec2(-1, -1)
-			if screen.x >= 0 and screen.y >= 0 then
-				map(screen.x*8, screen.y*8, x*64, y*64+draw_offset, 8, 8)
-			end
-		end
-	end
-end
-
--- reset the map from rom (if you make in-ram changes)
-function reload_map()
-	reset(0x2000, 0x2000, 0x1000)
-	poke(0x5f2c,3) -- enable 64 bit mode
-	-- set lavender to the transparent color
-	palt(0, false)
-	palt(13, true)
-end
-
-function _init()
-	poke(0x5f2c,3) -- enable 64 bit mode
-	-- set lavender to the transparent color
-	palt(0, false)
-	palt(13, true)
-	init_screen()
-end
-
-function update_game()
-	player.on_hold = false -- reset player hold to check again on next loop
-	player.on_chalkhold = false
-	foreach(actors, function(a)
-		-- a:move()
-		player:collide(a)
-	end)
-	-- printh("player pos: "..player.p.x..","..player.p.y)
-	player:move()
-
-	--if (btnp(5)) hud:shakehand()
-	--if (btnp(4)) hud:shakebar()
-	--coresume(parts)
-	--coresume(shake)
-	resumecoroutines()
-	cam:update(player.p)
-end
-
-function draw_game()
-	cls()
-	--testtiles()
-	-- testanimation()
-	--rectfill(0, 0, 64, 64, 14)
-	--map(0,0,0,0,64,64) -- draw level
-	draw_level(1)
-	--vectortests()
-	foreach(actors, function(a) a:draw() end)
-
-	toprope:drawrope()
-	player:draw()
-	drawparticles()
-	cam:update(player.p)
-	hud:draw()
-	if debug then print(debug) end
-end
-
-function init_game()
-	_update = update_game
-	_draw = draw_game
-
-	load_level(1)
-	-- player=c_player:new({ p = vec2(0, display-(8*2)) })
-	-- player = c_player:new({ p = vec2(level.spawn.screen.x*64+level.spawn.pos.x, level.spawn.screen.y*64+level.spawn.pos.y)})
-	player.statemachine.parent = player
-	hud = c_hud:new()
-	toprope = rope:create()
-	parts = cocreate(solveparticles)
-	add(coroutines, parts)
-end
-
 c_hud = c_object:new({
 	baro = vec2(0, 0),
 	hando = vec2(0, 0),
@@ -1020,38 +816,267 @@ c_hud = c_object:new({
 })
 add(classes, c_hud:new({}))
 
---[[
-function draw_hud()
-	-- stamina bar
-	rectfill(
-		cam.pos.x + baro.x,
-		cam.pos.y + baro.y,
-		cam.pos.x + 26 + baro.x,
-		cam.pos.y + 2 + baro.y,
-		1
-	)
-	if player.stamina > 0 then
-		line(
-			cam.pos.x + 1 + hando.x,
-			cam.pos.y + 1 + hando.y,
-			cam.pos.x + mid(1, (player.stamina / 4), 25) + hando.x,
-			cam.pos.y + 1 + hando.y,
-			11
-		)
-	end
 
-	-- grip icon
-	rectfill(
-		cam.pos.x + display - 8,
-		cam.pos.y,
-		cam.pos.x + display,
-		cam.pos.y + 7,
-		1
-	)
-	if player.holding then
-		spr(50, cam.pos.x + display - 8, cam.pos.y)
-	else
-		spr(49, cam.pos.x + display - 8, cam.pos.y)
+levels = {
+	-- {
+	-- 	name = "Level 1",
+	-- 	width = 2,
+	-- 	height = 4,
+	-- 	screens = {
+	-- 		--width
+	-- 		{
+	-- 			--height
+	-- 			dim = {
+	-- 				vec2(0, 0),
+	-- 				vec2(-1, -1),
+	-- 				vec2(-1, -1),
+	-- 				vec2(-1, -1)
+	-- 			},
+	-- 			bg = {
+	-- 				sprite = 18,
+	-- 				flips = nil
+	-- 			}
+	-- 		},
+	-- 		{
+	-- 			dim = {
+	-- 				vec2(0, 1),
+	-- 				vec2(-1, -1),
+	-- 				vec2(-1, -1),
+	-- 				vec2(-1, -1)
+	-- 			},
+	-- 			bg = {
+	-- 				sprite = 18,
+	-- 				flips = nil
+	-- 			}
+	-- 		}
+	-- 	}
+	-- },
+	{
+		name = "Level 1",
+		width = 2,
+		height = 3,
+		screens = {
+			--width
+			{
+				--height
+				dim = {
+					vec2(1, 0),
+					vec2(1, 0),
+					vec2(0, 0),
+				},
+				bg = {
+					sprite = 18,
+					flips = nil
+				}
+			},
+			{
+				dim = {
+					vec2(1, 1),
+					vec2(1, 1),
+					vec2(0, 1),
+				},
+				bg = {
+					sprite = 18,
+					flips = nil
+				}
+			}
+		}
+	},
+	{
+		name = "Level 2",
+		width = 2,
+		height = 2,
+		screens = {
+			--width
+			{
+				--height
+				vec2(-1, -1),
+				vec2(0, 0),
+			},
+			{
+				vec2(-1, -1),
+				vec2(0, 1),
+			}
+		}
+	}
+}
+level = nil
+draw_offset = 32*8
+
+function load_level(level_number)
+	reload_map()
+	level = levels[level_number]
+	for x = 0, level.width - 1 do
+		level.screens[x+1].bg.flips = {}
+		for y = 0, level.height - 1 do
+			add(level.screens[x+1].bg.flips, {})
+			local screen = level.screens[x+1].dim[y+1]
+			-- ignore screens set to tombstone vector vec2(-1, -1)
+			if screen.x >= 0 and screen.y >= 0 then
+				printh(x..","..y)
+				printh("screen_pos: "..screen.x..","..screen.y)
+				for sx = 0, 7 do
+					for sy = 0, 7 do
+						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
+						-- printh("mapped_pos: "..(mapped_pos.x*8)..","..(mapped_pos.y*8))
+						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
+						-- printh("world_pos: "..world_pos.x..","..world_pos.y)
+						local tile = mget(mapped_pos.x, mapped_pos.y)
+						if fget(tile, 2) then
+							printh("adding "..tile)
+							-- fixme: how to get hitbox?
+							add(actors, c_hold:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
+						end
+						if tile == 1 then
+							foreach(classes, function(c)
+								load_obj(world_pos, c)
+								mset(mapped_pos.x, mapped_pos.y, 0)
+							end)
+						elseif tile == 24 then
+							add(actors, c_object:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
+
+							printh('here')
+						end
+						
+						mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
+						printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
+						-- calculate flips per tile for the draw func
+						local flipx = flr(rnd(2))
+						local flipy = flr(rnd(2))
+						printh("flip = "..flipx..","..flipy)
+						if flipx == 1 then
+							flipx = true
+						else
+							flipx = false
+						end
+						if flipy == 1 then
+							flipy = true
+						else
+							flipy = false
+						end
+						local flips = level.screens[x+1].bg.flips[y+1]
+						add(flips[sx], vec2(flipx, flipy))
+					end
+				end
+			end
+		end
+	end
+	start_time = time()
+end
+
+function finish_level()
+	end_time = time()
+
+	local score = end_time - start_time
+	local formatted_time = format_time(score)
+	printh("time taken "..formatted_time.hours..":"..formatted_time.minutes..":"..formatted_time.seconds)
+end
+
+function load_obj(pos, o)
+	if o.name == "hold" then
+		--add(actors, c_hold:new({ x = x * 8, y = y * 8}))
+    -- add(actors, c_hold:new({p = vec2(x, y)}))
+		add(actors, c_hold:new({p = vec2(pos.x * 8, pos.y * 8)}))
+	elseif o.name == "granola" then
+		add(actors, c_granola:new({p = vec2(pos.x*8, pos.y*8)}))
+	elseif o.name == "chalk" then
+		add(actors, c_chalk:new({p = vec2(pos.x*8, pos.y*8)}))
+	elseif o.name == "chalkhold" then
+		add(actors, c_chalkhold:new({p = vec2(pos.x*8, pos.y*8)}))
+	end
+	if o.name == "player" then
+		printh("added player")
+		player = o:new({p = pos})
 	end
 end
---]]
+
+-- fixme: can't grab holds because no load
+function draw_level(level_number)
+	level = levels[level_number]
+	for x = 0, level.width - 1 do
+		for y = 0, level.height - 1 do
+			local screen = level.screens[x+1].dim[y+1]
+			local bg = level.screens[x+1].bg
+			-- draw bg
+			for sx = 0, 7 do
+				for sy = 0, 7 do
+					local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
+					-- printh("world pos: "..world_pos.x..","..world_pos.y)
+				
+					-- spr(bg.sprite, world_pos.x, world_pos.y, 1, 1, bg.flips[sx][sy].x, bg.flips[sx][sy].y)
+					spr(bg.sprite, world_pos.x, world_pos.y)
+				end
+			end
+			-- ignore screens set to tombstone vector vec2(-1, -1)
+			if screen.x >= 0 and screen.y >= 0 then
+				map(screen.x*8, screen.y*8, x*64, y*64+draw_offset, 8, 8)
+			end
+		end
+	end
+end
+
+-- reset the map from rom (if you make in-ram changes)
+function reload_map()
+	reset(0x2000, 0x2000, 0x1000)
+	poke(0x5f2c,3) -- enable 64 bit mode
+	-- set lavender to the transparent color
+	palt(0, false)
+	palt(13, true)
+end
+
+function _init()
+	poke(0x5f2c,3) -- enable 64 bit mode
+	-- set lavender to the transparent color
+	palt(0, false)
+	palt(13, true)
+	init_screen()
+end
+
+function update_game()
+	player.on_hold = false -- reset player hold to check again on next loop
+	player.on_chalkhold = false
+	foreach(actors, function(a)
+		-- a:move()
+		player:collide(a)
+	end)
+	player:move()
+
+	-- printh("playerpos"..player.p.x..", "..player.p.y)
+	--if (btnp(5)) hud:shakehand()
+	--if (btnp(4)) hud:shakebar()
+	--coresume(parts)
+	--coresume(shake)
+	resumecoroutines()
+	cam:update(player.p)
+end
+
+function draw_game()
+	cls()
+	--testtiles()
+	-- testanimation()
+	--rectfill(0, 0, 64, 64, 14)
+	--map(0,0,0,0,64,64) -- draw level
+	draw_level(1)
+	--vectortests()
+	foreach(actors, function(a) a:draw() end)
+
+	toprope:drawrope()
+	player:draw()
+	drawparticles()
+	cam:update(player.p)
+	hud:draw()
+	if debug then print(debug) end
+end
+
+function init_game()
+	_update = update_game
+	_draw = draw_game
+
+	load_level(1)
+
+	player.statemachine.parent = player
+	hud = c_hud:new()
+	toprope = rope:create()
+	parts = cocreate(solveparticles)
+	add(coroutines, parts)
+end
