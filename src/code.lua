@@ -109,11 +109,8 @@ cam = {
 		local third = ((display / 3) * 2) - 4
 		self.pos.x += (track_pos.x - self.pos.x - half) * self.lerp
 		self.pos.y += (track_pos.y - self.pos.y - third) * self.lerp
-
-		-- prevent camera jitter
-		self.pos.x = flr(self.pos.x)
-		self.pos.y = flr(self.pos.y)
-		camera(self.pos.x, self.pos.y)
+		-- use flr to prevent camera jitter
+		camera(flr(self.pos.x), flr(self.pos.y))
 	end
 }
 
@@ -221,19 +218,26 @@ c_object = c_sprite:new({
 	hp = 1,
 	move = function(self)
 		self.p.y += self.v.y
-		-- todo make this into a coroutine to do one of each
 		while ceil_tile_collide(self) do self.p.y += 1 end
 		while floor_tile_collide(self) do self.p.y -= 1 end
-		self.grounded = on_ground(self)
-		if self.v.x > 0 then self.flip = false -- sprite orientation
-		elseif self.v.x < 0 then self.flip = true end
+		-- if ceil_tile_collide(self) then self.p.y += 1 end
+		-- if floor_tile_collide(self) then self.p.y -= 1 end
+
 		self.p.x += self.v.x
 		while right_tile_collide(self) do self.p.x -= 1 end
 		while left_tile_collide(self) do self.p.x += 1 end
+		-- if right_tile_collide(self) then self.p.x -= 1 end
+		-- if left_tile_collide(self) then self.p.x += 1 end
+
 		-- push out of left boundary... todo: needed?
 		-- while calc_edges(self).l < 0 do self.p.x += 1 end
 		-- while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
-		self.p.y = flr(self.p.y) -- fix short bird issue
+
+		self.p.y = flr(self.p.y) -- prevent visually stuck in ground
+		self.grounded = on_ground(self)
+		-- sprite orientation
+		if self.v.x > 0 then self.flip = false
+		elseif self.v.x < 0 then self.flip = true end
 	end,
 	collide = function(self, other)
 		local personal_space,their_space = calc_edges(self),calc_edges(other)
@@ -437,8 +441,6 @@ c_player = c_entity:new({
 		if not jump_window then self.jumping = false end
 
 		if self.can_jump and btn(input.x) then
-
-	finish_level()
 			self.jumped_at = time()
 			self.num_jumps += 1
 			self.jumping = true

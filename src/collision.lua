@@ -50,7 +50,7 @@ function calc_edges(obj)
 end
 
 function solid_tile(x,y)
-	return is_flag_at(x/8,y/8,1)
+	return is_flag_at(x/8, y/8, 1)
 end
 
 function is_flag_at(x,y,f)
