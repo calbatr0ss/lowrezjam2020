@@ -9,6 +9,7 @@
   -- music
 
 coroutines = {}
+lastframebtns = {l = -1, r = -1, u = -1, d = -1, o = -1 , x = -1}
 player = nil
 g_force = 0.2
 display = 64
@@ -201,6 +202,7 @@ c_anim = c_sprite:new({
 			--add 2 to the end to componsate for flr and 1-index
 			self.currentframe = flr(time() * self.fr % self.fc) + 1
 		end
+		return self.currentframe
 	end,
 	loopbackward = function(self)
 		if self.playing == true then
@@ -317,6 +319,27 @@ c_chalk = c_object:new({
 })
 add(classes, c_chalk:new({}))
 
+-- Music manager
+c_jukebox = c_object:new({
+	songs = {0, 6, 8},
+	currentsong = -1,
+	playing = true,
+	startplayingnow = function(self, songn, f, chmsk)
+		if self.playing then
+			if currentsong != self.songs[songn] then
+				music(self.songs[songn], f, chmsk)
+			end
+			currentsong = self.songs[songn]
+		end
+	end,
+	stopplaying = function(self)
+		self.playing = false
+		music(-1, 300)
+		currentsong = -1
+	end
+})
+add(classes, c_jukebox:new({}))
+
 -- entity, inherits from object
 c_entity = c_object:new({
 	name = "entity",
@@ -372,6 +395,10 @@ c_player = c_entity:new({
 		},
 		jump = {
 			number = 2,
+			hitbox = {o = vec2(0, 0), w = 8, h = 8}
+		},
+		dead = {
+			number = 14,
 			hitbox = {o = vec2(0, 0), w = 8, h = 8}
 		}
 	},
@@ -612,7 +639,7 @@ c_player = c_entity:new({
 				name = "falling",
 				rules = {
 					function(p)
-						if (p.grounded) then
+						if (p.grounded) and p.v.y <= 4.5 then
 							local particle2 = smokepuff:new({
 								p = player.p,
 								v = vec2(-2, 0),
@@ -627,6 +654,21 @@ c_player = c_entity:new({
 							add(particles, particle)
 							add(particles, particle2)
 							return "default"
+						elseif (p.grounded) and p.v.y >= 4.5 then
+							for i = 1, 15, 1 do
+								add(particles, c_particle:new({
+									p = player.p + vec2(4, 8),
+									v = vec2(rnd(32)-16,
+									rnd(16)-16),
+									c = 14,
+									life = flr(rnd(15)),
+									damp = rnd(0.5),
+									g = 9.8,
+									dt = 0.25
+								}))
+								sfx(9)
+							end
+							return "dead"
 						end
 					end,
 					function(p)
@@ -637,8 +679,20 @@ c_player = c_entity:new({
 						end
 					end,
 					function(p)
-						if (p.v.y < 0) return "jumping"
+						if (p.v.y < 0) then
+								add(particles, airjump:new({p = player.p, v = player.v * -10}))
+								--spr(16, player.p.x + 4, player.p.y + 10)
+							 return "jumping"
+						end
 					end
+					}
+				},
+				dead = {
+					name = "dead",
+					rules = {
+						function(p)
+							return "dead"
+						end
 					}
 				}
 			}
@@ -745,6 +799,8 @@ c_player = c_entity:new({
 			frame = self.anims.falling.frames[self.anims.falling.currentframe]
 			self.sprites.falling.number = frame
 			self.sprite=self.sprites.falling
+		elseif self.state == "dead" then
+			self.sprite = self.sprites.dead
 		end
 	end
 })
@@ -861,7 +917,19 @@ function _init()
 	-- set lavender to the transparent color
 	palt(0, false)
 	palt(13, true)
+	jukebox = c_jukebox:new({})
 	init_screen()
+end
+
+function update_last_btns()
+	lastframebtns = {l = -1, r = -1, u = -1, d = -1, o = -1 , x = -1}
+	btns = btn()
+	if (band(1, btns) == 1) lastframebtns.l = 1
+	if (band(2, btns) == 2) lastframebtns.r = 1
+	if (band(4, btns) == 4) lastframebtns.u = 1
+	if (band(8, btns) == 8) lastframebtns.d = 1
+	if (band(16, btns) == 16) lastframebtns.o = 1
+	if (band(32, btns) == 32) lastframebtns.x = 1
 end
 
 function update_game()
@@ -872,13 +940,9 @@ function update_game()
 		player:collide(a)
 	end)
 	player:move()
-
-	--if (btnp(5)) hud:shakehand()
-	--if (btnp(4)) hud:shakebar()
-	--coresume(parts)
-	--coresume(shake)
 	resumecoroutines()
 	cam:update(player.p)
+	update_last_btns()
 end
 
 function draw_game()
@@ -897,20 +961,30 @@ function draw_game()
 	cam:update(player.p)
 	hud:draw()
 	if debug then print(debug) end
+	print("cpu "..stat(1), player.p.x, player.p.y - 5, 7)
+	gl:draw()
 end
 
 function init_game()
 	_update = update_game
 	_draw = draw_game
 
-	load_level(1)
+	gl = goal:new({p = vec2(32, 32)})
+
+	load_level(levelselection)
 	-- player=c_player:new({ p = vec2(0, display-(8*2)) })
 	player = c_player:new({ p = vec2(level.spawn.screen.x*64+level.spawn.pos.x, level.spawn.screen.y*64+level.spawn.pos.y)})
 	player.statemachine.parent = player
 	hud = c_hud:new()
+	five = 5
 	toprope = rope:create()
-	parts = cocreate(solveparticles)
-	add(coroutines, parts)
+	-- this if statement prevents a bug when resuming after returning to menu
+	if parts == nil then
+		parts = cocreate(solveparticles)
+		add(coroutines, parts)
+	end
+	menuitem(1, "back to menu", init_menu)
+	jukebox:startplayingnow(3, 2000, 11)
 end
 
 c_hud = c_object:new({
@@ -940,20 +1014,12 @@ c_hud = c_object:new({
 				11
 			)
 		end
-		-- I think I like it better without the rect?
-		-- grip icon
-		--[[rectfill(
-			cam.pos.x + display - 8,
-			cam.pos.y,
-			cam.pos.x + display,
-			cam.pos.y + 7,
-			1
-		)--]]
 		if player.holding then
 			spr(50, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
 		else
 			spr(49, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
 		end
+		if (player.has_chalk) spr(58, cam.pos.x + display - 15, cam.pos.y)
 	end,
 	shakehand = function(self)
 		self.hando = vec2(0, 0)
@@ -978,38 +1044,24 @@ c_hud = c_object:new({
 })
 add(classes, c_hud:new({}))
 
---[[
-function draw_hud()
-	-- stamina bar
-	rectfill(
-		cam.pos.x + baro.x,
-		cam.pos.y + baro.y,
-		cam.pos.x + 26 + baro.x,
-		cam.pos.y + 2 + baro.y,
-		1
-	)
-	if player.stamina > 0 then
-		line(
-			cam.pos.x + 1 + hando.x,
-			cam.pos.y + 1 + hando.y,
-			cam.pos.x + mid(1, (player.stamina / 4), 25) + hando.x,
-			cam.pos.y + 1 + hando.y,
-			11
-		)
+goal = c_object:new({
+	sprites = {
+		default = {
+			number = 60,
+			hitbox = {o = vec2(0, 0), w = 8, h = 8}
+		}
+	},
+	anims = {
+		wave = c_anim:new({
+			frames = {60, 61, 62, 63},
+			fr = 5,
+			fc = 4,
+			playing = true
+		})
+	},
+	draw = function(self)
+		local frame = self.anims.wave:loopforward()
+		self.sprites.default.number = self.anims.wave.frames[frame]
+		spr(self.sprites.default.number, self.p.x, self.p.y)
 	end
-
-	-- grip icon
-	rectfill(
-		cam.pos.x + display - 8,
-		cam.pos.y,
-		cam.pos.x + display,
-		cam.pos.y + 7,
-		1
-	)
-	if player.holding then
-		spr(50, cam.pos.x + display - 8, cam.pos.y)
-	else
-		spr(49, cam.pos.x + display - 8, cam.pos.y)
-	end
-end
---]]
+})
