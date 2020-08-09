@@ -34,12 +34,6 @@ end
 function calc_edges(obj)
 	if obj.flip then
 		return {
-			--[[
-			r=obj.p.x+8-obj.sprite.hitbox.ox-1,
-			l=obj.p.x+8-obj.sprite.hitbox.ox-obj.sprite.hitbox.w,
-			t=obj.p.y+obj.sprite.hitbox.oy,
-			b=obj.p.y+obj.sprite.hitbox.oy+obj.sprite.hitbox.h-1
-			--]]
 			r=obj.p.x+8-obj.sprite.hitbox.o.x-1,
 			l=obj.p.x+8-obj.sprite.hitbox.o.x-obj.sprite.hitbox.w,
 			t=obj.p.y+obj.sprite.hitbox.o.y,
@@ -47,12 +41,6 @@ function calc_edges(obj)
 		}
 	else
 		return {
-			--[[
-			r=obj.p.x+obj.sprite.hitbox.ox+obj.sprite.hitbox.w-1,
-			l=obj.p.x+obj.sprite.hitbox.ox,
-			t=obj.p.y+obj.sprite.hitbox.oy,
-			b=obj.p.y+obj.sprite.hitbox.oy+obj.sprite.hitbox.h-1
-			--]]
 			r=obj.p.x+obj.sprite.hitbox.o.x+obj.sprite.hitbox.w-1,
 			l=obj.p.x+obj.sprite.hitbox.o.x,
 			t=obj.p.y+obj.sprite.hitbox.o.y,
@@ -62,7 +50,7 @@ function calc_edges(obj)
 end
 
 function solid_tile(x,y)
-	return is_flag_at(x/8,y/8,1)
+	return is_flag_at(x/8, y/8, 1)
 end
 
 function is_flag_at(x,y,f)

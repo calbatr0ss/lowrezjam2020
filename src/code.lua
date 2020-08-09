@@ -96,8 +96,13 @@ function vnorm(vec)
 	return v
 end
 
+function vdist(v1, v2)
+	return sqrt(((v2.x-v1.x)*(v2.x-v1.x))+((v2.y-v1.y)*(v2.y-v1.y)))
+end
+
 cam = {
-	pos = vec2(0, 0),
+	-- todo use the offset here
+	pos = vec2(0, 0-1280),
 	lerp = 0.15,
 	update = function(self, track_pos)
 		-- direct follow
@@ -109,11 +114,8 @@ cam = {
 		local third = ((display / 3) * 2) - 4
 		self.pos.x += (track_pos.x - self.pos.x - half) * self.lerp
 		self.pos.y += (track_pos.y - self.pos.y - third) * self.lerp
-
-		-- prevent camera jitter
-		self.pos.x = flr(self.pos.x)
-		self.pos.y = flr(self.pos.y)
-		camera(self.pos.x, self.pos.y)
+		-- use flr to prevent camera jitter
+		camera(flr(self.pos.x), flr(self.pos.y))
 	end
 }
 
@@ -222,19 +224,28 @@ c_object = c_sprite:new({
 	hp = 1,
 	move = function(self)
 		self.p.y += self.v.y
-		-- todo make this into a coroutine to do one of each
 		while ceil_tile_collide(self) do self.p.y += 1 end
 		while floor_tile_collide(self) do self.p.y -= 1 end
-		self.grounded = on_ground(self)
-		if self.v.x > 0 then self.flip = false -- sprite orientation
-		elseif self.v.x < 0 then self.flip = true end
+		-- if ceil_tile_collide(self) then self.p.y += 1 end
+		-- if floor_tile_collide(self) then self.p.y -= 1 end
+
 		self.p.x += self.v.x
 		while right_tile_collide(self) do self.p.x -= 1 end
 		while left_tile_collide(self) do self.p.x += 1 end
+		-- if right_tile_collide(self) then self.p.x -= 1 end
+		-- if left_tile_collide(self) then self.p.x += 1 end
+
 		-- push out of left boundary... todo: needed?
-		while calc_edges(self).l < 0 do self.p.x += 1 end
-		while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
-		self.p.y = flr(self.p.y) -- fix short bird issue
+		-- while calc_edges(self).l < 0 do self.p.x += 1 end
+		-- while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
+
+		if floor_tile_collide(self) then
+			self.p.y = flr(self.p.y) -- prevent visually stuck in ground
+		end
+		self.grounded = on_ground(self)
+		-- sprite orientation
+		if self.v.x > 0 then self.flip = false
+		elseif self.v.x < 0 then self.flip = true end
 	end,
 	collide = function(self, other)
 		local personal_space,their_space = calc_edges(self),calc_edges(other)
@@ -347,11 +358,15 @@ c_entity = c_object:new({
 	topspd = 1,
 	move = function(self)
 		-- gravity
-		if not self.grounded or self.jumping then
-			self.v.y += g_force
-			-- todo: pick good grav bounds -2,5
-			self.v.y = mid(-999, self.v.y, 5) -- clamp
-		else self.v.y = 0 end
+		if not self.holding then
+			if not self.grounded or self.jumping then
+				self.v.y += g_force
+				-- todo: pick good grav bounds -2,5
+				self.v.y = mid(-999, self.v.y, 5) -- clamp
+			else
+				self.v.y = 0
+			end
+		end
 		-- out of bounds
 		-- if (self.y / 8) > level.h then
 		-- 	self:die()
@@ -406,7 +421,7 @@ c_player = c_entity:new({
 	statemachine = nil,
 	name = "player",
 	spd = 0.5,
-	jump_force = 2,
+	jump_force = 2.5,
 	currentanim = "default",
 	topspd = 2, -- all player speeds must be integers to avoid camera jitter
 	jumped_at = 0,
@@ -420,6 +435,10 @@ c_player = c_entity:new({
 	jump_newly_pressed = false,
 	dead = false,
 	on_hold = false,
+	holding_pos = vec2(0, 0),
+	hold_wiggle = 3,
+	hold_spd = 0.5,
+	hold_topspd = 0.75,
 	on_chalkhold = false,
 	chalkhold = nil,
 	has_chalk = false,
@@ -429,14 +448,48 @@ c_player = c_entity:new({
 	stamina_regen_rate = 2,
 	stamina_regen_cor = nil,
 	input=function(self)
-		-- left/right movement
-		if btn(input.r) then
-			self.v.x = mid(-self.topspd, self.v.x + self.spd, self.topspd)
-		elseif btn(input.l) then
-			self.v.x = mid(-self.topspd, self.v.x - self.spd, self.topspd)
-		else -- decay
-			self.v.x *= 0.5
-			if abs(self.v.x) < 0.2 then self.v.x = 0 end
+		if self.holding then
+			local new_vel = vec2(0, 0)
+			if btn(input.u) then
+				-- self.v.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
+				new_vel.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
+				printh(self.v.y..","..new_vel.y)
+			elseif btn(input.d) then
+				new_vel.y = mid(-self.hold_topspd, self.v.y + self.hold_spd, self.hold_topspd)
+			else -- decay
+				self.v.y *= 0.5
+				if abs(self.v.y) < 0.2 then self.v.y = 0 end
+			end
+			if btn(input.r) then
+				new_vel.x = mid(-self.hold_topspd, self.v.x + self.hold_spd, self.hold_topspd)
+			elseif btn(input.l) then
+				new_vel.x = mid(-self.hold_topspd, self.v.x - self.hold_spd, self.hold_topspd)
+			else -- decay
+				self.v.x *= 0.5
+				if abs(self.v.x) < 0.2 then self.v.x = 0 end
+			end
+
+			local new_pos = vec2(self.p.x+new_vel.x, self.p.y+new_vel.y)
+			printh(abs(vdist(new_pos, self.holding_pos)))
+			if abs(vdist(new_pos, self.holding_pos)) <= self.hold_wiggle then
+				self.v = new_vel
+			else
+				self.v.y *= 0.5
+				if abs(self.v.y) < 0.2 then self.v.y = 0 end
+				self.v.x *= 0.5
+				if abs(self.v.x) < 0.2 then self.v.x = 0 end
+			end
+
+		else
+			-- left/right movement
+			if btn(input.r) then
+				self.v.x = mid(-self.topspd, self.v.x + self.spd, self.topspd)
+			elseif btn(input.l) then
+				self.v.x = mid(-self.topspd, self.v.x - self.spd, self.topspd)
+			else -- decay
+				self.v.x *= 0.5
+				if abs(self.v.x) < 0.2 then self.v.x = 0 end
+			end
 		end
 
 		-- jump
@@ -463,8 +516,6 @@ c_player = c_entity:new({
 		if not jump_window then self.jumping = false end
 
 		if self.can_jump and btn(input.x) then
-
-	finish_level()
 			self.jumped_at = time()
 			self.num_jumps += 1
 			self.jumping = true
@@ -481,19 +532,24 @@ c_player = c_entity:new({
 
 		-- hold
 		if btn(input.o) then
+			if self.holding == false and self.on_hold then
+				-- first grabbed, stick position and reset jump
+				self.holding_pos = vec2(self.p.x, self.p.y)
+				printh("GRABBED")
+				self.v = vec2(0, 0)
+				self.num_jumps = 0
+			end
 			if self.on_hold then
 				self.holding = true
-				-- freeze position
-				self.v.x = 0
-				self.v.y = 0
-				-- reset jump
-				self.num_jumps = 0
 			elseif self.on_chalkhold and self.has_chalk then
 				self.chalkhold.activated = true
 				sfx(5)
 				self.has_chalk = false
 			end
 		else
+			self.holding = false
+		end
+		if not self.on_hold then
 			self.holding = false
 		end
 	end,
@@ -806,59 +862,150 @@ c_player = c_entity:new({
 })
 add(classes, c_player:new({}))
 
+c_hud = c_object:new({
+	baro = vec2(0, 0),
+	hando = vec2(0, 0),
+	draw = function(self)
+		rectfill(
+			cam.pos.x + self.baro.x,
+			cam.pos.y + self.baro.y,
+			cam.pos.x + 26 + self.baro.x,
+			cam.pos.y + 2 + self.baro.y,
+			1
+		)
+		line(
+			cam.pos.x + 1 + self.baro.x,
+			cam.pos.y + 1 + self.baro.y,
+			cam.pos.x + 25 + self.baro.x,
+			cam.pos.y + 1 + self.baro.y,
+			8
+		)
+		if player.stamina > 0 then
+			line(
+				cam.pos.x + 1 + self.baro.x,
+				cam.pos.y + 1 + self.baro.y,
+				cam.pos.x + mid(1, (player.stamina / 4), 25) + self.baro.x,
+				cam.pos.y + 1 + self.baro.y,
+				11
+			)
+		end
+		-- grip icon
+		if player.holding then
+			spr(50, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
+		else
+			spr(49, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
+		end
+	end,
+	shakehand = function(self)
+		self.hando = vec2(0, 0)
+		--Should check if there is already a coroutine running , and either delete it
+		--or resume it. This prevents a crash in the event you spam the button too much.
+		--Fix this post jam
+		sfx(8, -2)
+		sfx(8, -1, 0, 12)
+		shakeh = cocreate(sinxshake)
+		coresume(shakeh, self.hando, 2, 2, 10)
+		add(coroutines, shakeh)
+	end,
+	shakebar = function(self)
+		self.baro = vec2(0, 0)
+		--See note above
+		sfx(7, -2)
+		sfx(7, -1, 0, 12)
+		shakeb = cocreate(sinxshake)
+		coresume(shakeb, self.baro, 2, 2, 10)
+		add(coroutines, shakeb)
+	end
+})
+add(classes, c_hud:new({}))
+
 
 levels = {
 	{
 		name = "Level 1",
 		width = 2,
-		height = 4,
-		spawn = {
-			screen = vec2(1, 0),
-			pos = vec2(6*8, 6*8)
-		},
+		height = 3,
 		screens = {
 			--width
 			{
 				--height
-				vec2(0, 0),
-				vec2(-1, -1),
-				vec2(-1, -1),
-				vec2(-1, -1)
+				dim = {
+					vec2(1, 0),
+					vec2(1, 0),
+					vec2(0, 0),
+				},
+				bg = {
+					sprite = 18
+				}
 			},
 			{
+				dim = {
+					vec2(1, 1),
+					vec2(1, 1),
+					vec2(0, 1),
+				},
+				bg = {
+					sprite = 18
+				}
+			}
+		}
+	},
+	{
+		name = "Level 2",
+		width = 2,
+		height = 2,
+		screens = {
+			--width
+			{
+				--height
+				vec2(-1, -1),
+				vec2(0, 0),
+			},
+			{
+				vec2(-1, -1),
 				vec2(0, 1),
-				vec2(-1, -1),
-				vec2(-1, -1),
-				vec2(-1, -1)
 			}
 		}
 	}
 }
 level = nil
+draw_offset = 32*8
 
 function load_level(level_number)
 	reload_map()
 	level = levels[level_number]
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
-			local screen = level.screens[x+1][y+1]
+			local screen = level.screens[x+1].dim[y+1]
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
 				printh(x..","..y)
 				printh("screen_pos: "..screen.x..","..screen.y)
-				for sx = 0, 8 do
-					for sy = 0, 8 do
+				for sx = 0, 7 do
+					for sy = 0, 7 do
 						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
 						-- printh("mapped_pos: "..(mapped_pos.x*8)..","..(mapped_pos.y*8))
-						local world_pos = vec2(x*8*8+sx*8, y*8*8+sy*8)
+						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
 						-- printh("world_pos: "..world_pos.x..","..world_pos.y)
 						local tile = mget(mapped_pos.x, mapped_pos.y)
 						if fget(tile, 2) then
 							printh("adding "..tile)
-							-- fixme: how to get hitbox and shit?
+							-- fixme: how to get hitbox?
 							add(actors, c_hold:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
 						end
+						if tile == 1 then
+							foreach(classes, function(c)
+								load_obj(world_pos, c)
+								mset(mapped_pos.x, mapped_pos.y, 0)
+							end)
+						elseif tile == 24 then
+							add(actors, c_object:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
+
+							printh('here')
+						end
+						
 						mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
+						printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
 					end
 				end
 			end
@@ -875,29 +1022,40 @@ function finish_level()
 	printh("time taken "..formatted_time.hours..":"..formatted_time.minutes..":"..formatted_time.seconds)
 end
 
-function load_obj(x, y, o)
+function load_obj(pos, o)
 	if o.name == "hold" then
-		--add(actors, c_hold:new({ x = x * 8, y = y * 8}))
-    -- add(actors, c_hold:new({p = vec2(x, y)}))
-		add(actors, c_hold:new({p = vec2(x * 8, y * 8)}))
+		add(actors, c_hold:new({p = vec2(pos.x * 8, pos.y * 8)}))
 	elseif o.name == "granola" then
-		add(actors, c_granola:new({p = vec2(x*8, y*8)}))
+		add(actors, c_granola:new({p = vec2(pos.x*8, pos.y*8)}))
 	elseif o.name == "chalk" then
-		add(actors, c_chalk:new({p = vec2(x*8, y*8)}))
+		add(actors, c_chalk:new({p = vec2(pos.x*8, pos.y*8)}))
 	elseif o.name == "chalkhold" then
-		add(actors, c_chalkhold:new({p = vec2(x*8, y*8)}))
+		add(actors, c_chalkhold:new({p = vec2(pos.x*8, pos.y*8)}))
+	end
+	if o.name == "player" then
+		printh("added player")
+		player = o:new({p = pos})
 	end
 end
 
 -- fixme: can't grab holds because no load
 function draw_level(level_number)
 	level = levels[level_number]
+	srand(800)
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
-			local screen = level.screens[x+1][y+1]
+			local screen = level.screens[x+1].dim[y+1]
+			local bg = level.screens[x+1].bg
+			-- draw bg
+			for sx = 0, 7 do
+				for sy = 0, 7 do
+					local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
+					spr(bg.sprite, world_pos.x, world_pos.y, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
+				end
+			end
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
-				map(screen.x*8, screen.y*8, x*8*8, y*8*8, 8, 8)
+				map(screen.x*8, screen.y*8, x*64, y*64+draw_offset, 8, 8)
 			end
 		end
 	end
@@ -949,8 +1107,6 @@ function draw_game()
 	cls()
 	--testtiles()
 	-- testanimation()
-	--rectfill(0, 0, 64, 64, 14)
-	--map(0,0,0,0,64,64) -- draw level
 	draw_level(1)
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
@@ -972,8 +1128,7 @@ function init_game()
 	gl = goal:new({p = vec2(32, 32)})
 
 	load_level(levelselection)
-	-- player=c_player:new({ p = vec2(0, display-(8*2)) })
-	player = c_player:new({ p = vec2(level.spawn.screen.x*64+level.spawn.pos.x, level.spawn.screen.y*64+level.spawn.pos.y)})
+
 	player.statemachine.parent = player
 	hud = c_hud:new()
 	five = 5
