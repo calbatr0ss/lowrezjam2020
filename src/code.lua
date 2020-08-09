@@ -22,11 +22,13 @@ end_time = 0
 -- particles
 particles = {}
 
+--[[
 function clamp(v, a, b)
 	if (v > b) v = b
 	if (v < a) v = a
 	return v
 end
+--]]
 
 --vector functions (turns out order matters)
 function vec2(x, y)
@@ -66,12 +68,14 @@ function vmult(v1, v2)
 end
 
 --outer product. will probably go unused in this project
+--[[
 function vmult2(v1, v2)
 	local vec = vec2(0, 0)
 	vec.x = v1.x * v2.x
 	vec.y = v1.y * v2.y
 	return vec
 end
+--]]
 
 function vdot(v1, v2)
 	return (v1.x * v2.x) + (v1.y * v2.y)
@@ -110,8 +114,8 @@ cam = {
 		-- cam.pos.y = track_pos.y - ((display / 3) * 2) + 4
 
 		-- lerp follow
-		local half = display / 2 - 4
-		local third = ((display / 3) * 2) - 4
+		local half = 28
+		local third = 39
 		self.pos.x += (track_pos.x - self.pos.x - half) * self.lerp
 		self.pos.y += (track_pos.y - self.pos.y - third) * self.lerp
 		-- use flr to prevent camera jitter
@@ -386,35 +390,6 @@ c_player = c_entity:new({
 			number = 1,
 			--hitbox={ ox = 0, oy = 0, w = 8, h = 8 }
 			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
-		},
-		walk = {
-			number = 2,
-			--hitbox = { ox=1, oy = 3, w = 6, h = 5 }
-			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
-		},
-		hold = {
-			number = 5,
-			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
-		},
-		shimmy = {
-			number = 8,
-			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
-		},
-		hold = {
-			number = 5,
-			hitbox = {o = vec2(0, 0), w = 8, h = 8}
-		},
-		falling = {
-			number = 11,
-			hitbox = {o = vec2(0, 0), w = 8, h = 8}
-		},
-		jump = {
-			number = 2,
-			hitbox = {o = vec2(0, 0), w = 8, h = 8}
-		},
-		dead = {
-			number = 14,
-			hitbox = {o = vec2(0, 0), w = 8, h = 8}
 		}
 	},
 	anims = nil,
@@ -826,38 +801,42 @@ c_player = c_entity:new({
 	anim = function(self)
 		--self:determinestate()
 		local frame = 1
+		local state = self.state
+		local sprites = self.sprites
+		local number = self.sprites.default.number
 		self.statemachine.transition(self.statemachine)
-		self.state = self.statemachine.currentstate.name
+		state = self.statemachine.currentstate.name
+
 		-- todo: find a way to save the sprites and hitboxes to the states?
-		if self.state=="default" then
-			self.sprite=self.sprites.default
-		elseif self.state=="sit" then
-			self.sprite=self.sprites.sit
+		if state=="default" then
+			--self.sprite=sprites.default
+			number = 1
+		elseif state=="sit" then
+			self.sprite=sprites.sit
 		--assign state, make animation play, set frame number to existing sprite hitbox
-		elseif self.state=="walk" then
+		elseif state=="walk" then
 			self.anims.walk.playing = true
 			self.anims.walk:loopforward()
-			frame = self.anims.walk.frames[self.anims.walk.currentframe]
-			self.sprites.walk.number = frame
-			self.sprite = self.sprites.walk
-		elseif self.state == "hold" then
-			self.sprite = self.sprites.hold
+			number = self.anims.walk.frames[self.anims.walk.currentframe]
+		elseif state == "hold" then
+			number = 5
 			if (self.jump_newly_pressed) hud:shakehand()
-		elseif self.state == "shimmyl" then
-			self.sprite = self.sprites.shimmy
-		elseif self.state == "shimmyr" then
-			self.sprite = self.sprites.shimmy
-		elseif self.state=="jumping" then
-			self.sprite = self.sprites.jump
-		elseif self.state == "falling" then
+		elseif state == "shimmyl" then
+			number = 13
+		elseif state == "shimmyr" then
+			number = 13
+		elseif state=="jumping" then
+			number = 2
+		elseif state == "falling" then
 			self.anims.falling.playing = true
 			self.anims.falling:loopforward()
 			frame = self.anims.falling.frames[self.anims.falling.currentframe]
-			self.sprites.falling.number = frame
-			self.sprite=self.sprites.falling
-		elseif self.state == "dead" then
-			self.sprite = self.sprites.dead
+			number = frame
+		elseif state == "dead" then
+			number = 14
 		end
+		self.state = state
+		self.sprites.default.number = number
 	end
 })
 add(classes, c_player:new({}))
@@ -866,16 +845,18 @@ c_hud = c_object:new({
 	baro = vec2(0, 0),
 	hando = vec2(0, 0),
 	draw = function(self)
+		corneroffset = cam.pos + self.baro
 		rectfill(
-			cam.pos.x + self.baro.x,
-			cam.pos.y + self.baro.y,
+			corner.offset.x,
+			corner.offset.y,
 			cam.pos.x + 26 + self.baro.x,
 			cam.pos.y + 2 + self.baro.y,
 			1
 		)
+		corneroffset += vec2(1, 1)
 		line(
-			cam.pos.x + 1 + self.baro.x,
-			cam.pos.y + 1 + self.baro.y,
+			corneroffset.x,
+			corneroffset.y,
 			cam.pos.x + 25 + self.baro.x,
 			cam.pos.y + 1 + self.baro.y,
 			8
@@ -883,7 +864,7 @@ c_hud = c_object:new({
 		if player.stamina > 0 then
 			line(
 				cam.pos.x + 1 + self.baro.x,
-				cam.pos.y + 1 + self.baro.y,
+				flr(cam.pos.y + 1 + self.baro.y),
 				cam.pos.x + mid(1, (player.stamina / 4), 25) + self.baro.x,
 				cam.pos.y + 1 + self.baro.y,
 				11
@@ -891,9 +872,9 @@ c_hud = c_object:new({
 		end
 		-- grip icon
 		if player.holding then
-			spr(50, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
+			spr(50, cam.pos.x + 55 + self.hando.x, cam.pos.y + self.hando.y)
 		else
-			spr(49, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
+			spr(49, cam.pos.x + 55 + self.hando.x, cam.pos.y + self.hando.y)
 		end
 	end,
 	shakehand = function(self)
@@ -1003,7 +984,7 @@ function load_level(level_number)
 
 							printh('here')
 						end
-						
+
 						mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
 						printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
 					end
@@ -1130,7 +1111,7 @@ function init_game()
 	load_level(levelselection)
 
 	player.statemachine.parent = player
-	hud = c_hud:new()
+	hud = c_hud:new({})
 	five = 5
 	toprope = rope:create()
 	-- this if statement prevents a bug when resuming after returning to menu
@@ -1146,6 +1127,8 @@ c_hud = c_object:new({
 	baro = vec2(0, 0),
 	hando = vec2(0, 0),
 	draw = function(self)
+		self.p.x = flr(self.p.x)
+		self.p.y = flr(self.p.y)
 		rectfill(
 			cam.pos.x + self.baro.x,
 			cam.pos.y + self.baro.y,
@@ -1170,11 +1153,11 @@ c_hud = c_object:new({
 			)
 		end
 		if player.holding then
-			spr(50, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
+			spr(50, cam.pos.x + 55 + self.hando.x, cam.pos.y + self.hando.y)
 		else
-			spr(49, cam.pos.x + display - 9 + self.hando.x, cam.pos.y + self.hando.y)
+			spr(49, cam.pos.x + 55 + self.hando.x, cam.pos.y + self.hando.y)
 		end
-		if (player.has_chalk) spr(58, cam.pos.x + display - 15, cam.pos.y)
+		if (player.has_chalk) spr(58, cam.pos.x + 49, cam.pos.y)
 	end,
 	shakehand = function(self)
 		self.hando = vec2(0, 0)
