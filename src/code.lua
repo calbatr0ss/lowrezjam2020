@@ -239,9 +239,9 @@ c_object = c_sprite:new({
 		-- if right_tile_collide(self) then self.p.x -= 1 end
 		-- if left_tile_collide(self) then self.p.x += 1 end
 
-		-- push out of left boundary... todo: needed?
-		-- while calc_edges(self).l < 0 do self.p.x += 1 end
-		-- while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
+		-- keep inside level boundary
+		while calc_edges(self).l < 0 do self.p.x += 1 end
+		while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
 
 		if floor_tile_collide(self) then
 			self.p.y = flr(self.p.y) -- prevent visually stuck in ground
@@ -399,18 +399,22 @@ c_player = c_entity:new({
 	dead = false,
 	on_hold = false,
 	holding_pos = vec2(0, 0),
+	last_held = 0,
+	was_holding = false,
 	hold_wiggle = 3,
 	hold_spd = 0.5,
 	hold_topspd = 0.75,
+	holding = false,
+	holding_cooldown = 0.3, -- 300ms
 	on_chalkhold = false,
 	chalkhold = nil,
 	has_chalk = false,
-	holding = false,
 	stamina = 100,
 	max_stamina = 100,
-	stamina_regen_rate = 2,
+	stamina_regen_rate = 3,
 	stamina_regen_cor = nil,
-	input=function(self)
+	input = function(self)
+		if self.state == "dead" then return end -- no zombies
 		if self.holding then
 			local new_vel = vec2(0, 0)
 			if btn(input.u) then
@@ -494,26 +498,34 @@ c_player = c_entity:new({
 		end
 
 		-- hold
+		local can_hold_again = (time() - self.last_held) > self.holding_cooldown
 		if btn(input.o) then
-			if self.holding == false and self.on_hold then
-				-- first grabbed, stick position and reset jump
-				self.holding_pos = vec2(self.p.x, self.p.y)
-				-- printh("GRABBED")
-				self.v = vec2(0, 0)
-				self.num_jumps = 0
-			end
-			if self.on_hold then
-				self.holding = true
-			elseif self.on_chalkhold and self.has_chalk then
-				self.chalkhold.activated = true
-				sfx(5)
-				self.has_chalk = false
+			if can_hold_again then
+				if self.on_hold then
+					if self.holding == false then
+						-- first grabbed, stick position and reset jump
+						self.holding_pos = vec2(self.p.x, self.p.y)
+						self.was_holding = true
+						-- printh("GRABBED")
+						self.v = vec2(0, 0)
+						self.num_jumps = 0
+					end
+					self.holding = true
+				elseif self.on_chalkhold and self.has_chalk then
+					self.chalkhold.activated = true
+					sfx(5)
+					self.has_chalk = false
+				end
 			end
 		else
 			self.holding = false
 		end
 		if not self.on_hold then
 			self.holding = false
+		end
+		if self.was_holding and not self.holding then
+			self.last_held = time()
+			self.was_holding = false
 		end
 	end,
 	regen_stamina = function(self)
@@ -895,7 +907,7 @@ add(classes, c_hud:new({}))
 
 levels = {
 	{
-		name = "Level 1",
+		name = "test",
 		width = 2,
 		height = 3,
 		screens = {
@@ -905,7 +917,7 @@ levels = {
 				dim = {
 					vec2(1, 0),
 					vec2(1, 0),
-					vec2(0, 0),
+					vec2(0, 0)
 				},
 				bg = {
 					sprite = 18
@@ -915,7 +927,7 @@ levels = {
 				dim = {
 					vec2(1, 1),
 					vec2(1, 1),
-					vec2(0, 1),
+					vec2(0, 1)
 				},
 				bg = {
 					sprite = 18
@@ -924,19 +936,20 @@ levels = {
 		}
 	},
 	{
-		name = "Level 2",
-		width = 2,
+		name = "approach",
+		width = 1,
 		height = 2,
 		screens = {
 			--width
 			{
 				--height
-				vec2(-1, -1),
-				vec2(0, 0),
-			},
-			{
-				vec2(-1, -1),
-				vec2(0, 1),
+				dim = {
+					vec2(-1, -1),
+					vec2(0, 2)
+				},
+				bg = {
+					sprite = 19
+				}
 			}
 		}
 	}
@@ -1005,9 +1018,7 @@ function load_obj(pos, o)
 	end
 end
 
--- fixme: can't grab holds because no load
-function draw_level(level_number)
-	level = levels[level_number]
+function draw_level()
 	clip(cam.x, cam.y, 64, 64)
 	srand(800)
 	for x = 0, level.width - 1 do
@@ -1077,8 +1088,7 @@ function draw_game()
 	cls()
 	--testtiles()
 	-- testanimation()
-	draw_level(1)
-	--vectortests()
+	draw_level()
 	foreach(actors, function(a) a:draw() end)
 
 	toprope:drawrope()
@@ -1086,7 +1096,6 @@ function draw_game()
 	drawparticles()
 	cam:update(player.p)
 	hud:draw()
-	if debug then print(debug) end
 	print("cpu "..stat(1), player.p.x, player.p.y - 5, 7)
 	gl:draw()
 end
