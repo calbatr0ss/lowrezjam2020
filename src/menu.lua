@@ -1,24 +1,26 @@
 c_arrows = c_object:new({
 	yo = 0,
-	y = 21,
+	y = 33,
 	items = {
+		"credits",
 		"music",
 		"level"
 	},
 	index = 2,
 	music = "on",
-	currentitem = "level",
+	currentitem = "levels",
 	moved = function(self)
 		sfx(10, -1, 0, 5)
-		self.y += 20
+		self.y += 15
 	end,
 	moveu = function(self)
 		sfx(10, -1, 0, 5)
-		self.y -= 20
+		self.y -= 15
 	end,
 	draw = function(self)
-		print("level: "..levelselection, 15, 22, 1)
-		print("music: "..self.music, 15, 43, 1)
+		print("level: "..levelselection, 15, 20, 1)
+		print("music: "..self.music, 15, 35, 1)
+		print("credits", 15, 50, 1)
 		self.yo = self.yo + sin(time()) * 0.3
 		if btn(1) then
 			spr(44, 56, self.y + self.yo)
@@ -70,7 +72,9 @@ function update_menu()
 	end
 	levelselection = clamp(levelselection, 1, #levels)
 	if btnp(input.o) or btnp(input.x) then
-		init_game()
+		if arrows.currentitem != "credits" then
+			init_game()
+		end
 	end
 end
 

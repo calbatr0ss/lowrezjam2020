@@ -200,6 +200,7 @@ c_anim = c_sprite:new({
 			--add 2 to the end to componsate for flr and 1-index
 			self.currentframe = flr(time() * self.fr % self.fc) + 1
 		end
+		return self.currentframe
 	end,
 	loopbackward = function(self)
 		if self.playing == true then
@@ -948,11 +949,14 @@ function draw_game()
 	hud:draw()
 	if debug then print(debug) end
 	print("cpu "..stat(1), player.p.x, player.p.y - 5, 7)
+	gl:draw()
 end
 
 function init_game()
 	_update = update_game
 	_draw = draw_game
+
+	gl = goal:new({p = vec2(32, 32)})
 
 	load_level(levelselection)
 	-- player=c_player:new({ p = vec2(0, display-(8*2)) })
@@ -1026,3 +1030,25 @@ c_hud = c_object:new({
 	end
 })
 add(classes, c_hud:new({}))
+
+goal = c_object:new({
+	sprites = {
+		default = {
+			number = 60,
+			hitbox = {o = vec2(0, 0), w = 8, h = 8}
+		}
+	},
+	anims = {
+		wave = c_anim:new({
+			frames = {60, 61, 62, 63},
+			fr = 5,
+			fc = 4,
+			playing = true
+		})
+	},
+	draw = function(self)
+		local frame = self.anims.wave:loopforward()
+		self.sprites.default.number = self.anims.wave.frames[frame]
+		spr(self.sprites.default.number, self.p.x, self.p.y)
+	end
+})

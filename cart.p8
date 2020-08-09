@@ -124,6 +124,7 @@ name="animation",	fr=15,	frames={1},	fc=1,	playing=false,	playedonce=false,	star
 if self.playing==true then
 self.currentframe=flr(time()*self.fr % self.fc)+1
 end
+return self.currentframe
 end,	loopbackward=function(self)
 if self.playing==true then
 self.currentframe=self.fc-(flr(time()*self.fr % self.fc)+1)
@@ -664,10 +665,12 @@ cam:update(player.p)
 hud:draw()
 if debug then print(debug) end
 print("cpu "..stat(1),player.p.x,player.p.y-5,7)
+gl:draw()
 end
 function init_game()
 _update=update_game
 _draw=draw_game
+gl=goal:new({p=vec2(32,32)})
 load_level(levelselection)
 player=c_player:new({ p=vec2(level.spawn.screen.x*64+level.spawn.pos.x,level.spawn.screen.y*64+level.spawn.pos.y)})
 player.statemachine.parent=player
@@ -717,6 +720,21 @@ add(coroutines,shakeb)
 end
 })
 add(classes,c_hud:new({}))
+goal=c_object:new({
+sprites={
+default={
+number=60,			hitbox={o=vec2(0,0),w=8,h=8}
+}
+},	anims={
+wave=c_anim:new({
+frames={60,61,62,63},			fr=5,			fc=4,			playing=true
+})
+},	draw=function(self)
+local frame=self.anims.wave:loopforward()
+self.sprites.default.number=self.anims.wave.frames[frame]
+spr(self.sprites.default.number,self.p.x,self.p.y)
+end
+})
 function right_tile_collide(obj)
 local edges=calc_edges(obj)
 return solid_tile(edges.r,edges.b)
@@ -779,17 +797,18 @@ end
 end
 end
 c_arrows=c_object:new({
-yo=0,	y=21,	items={
-"music",		"level"
-},	index=2,	music="on",	currentitem="level",	moved=function(self)
+yo=0,	y=33,	items={
+"credits",		"music",		"level"
+},	index=2,	music="on",	currentitem="levels",	moved=function(self)
 sfx(10,-1,0,5)
-self.y+=20
+self.y+=15
 end,	moveu=function(self)
 sfx(10,-1,0,5)
-self.y-=20
+self.y-=15
 end,	draw=function(self)
-print("level: "..levelselection,15,22,1)
-print("music: "..self.music,15,43,1)
+print("level: "..levelselection,15,20,1)
+print("music: "..self.music,15,35,1)
+print("credits",15,50,1)
 self.yo=self.yo+sin(time())*0.3
 if btn(1) then
 spr(44,56,self.y+self.yo)
@@ -839,7 +858,9 @@ jukebox:startplayingnow(2,1000,7)
 end
 levelselection=clamp(levelselection,1,#levels)
 if btnp(input.o) or btnp(input.x) then
+if arrows.currentitem !="credits" then
 init_game()
+end
 end
 end
 function draw_menu()
