@@ -36,6 +36,10 @@ c_arrows = c_object:new({
 })
 
 function init_menu()
+	clear_state()
+	-- printh("coroutines "..#coroutines)
+	-- printh("particles "..#particles)
+	-- printh("actors "..#actors)
 	levelselection = 1
 	camera(0, 0)
 	screen = "menu"
