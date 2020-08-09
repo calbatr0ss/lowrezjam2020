@@ -260,18 +260,6 @@ c_object = c_sprite:new({
 })
 add(classes, c_object:new({}))
 
--- hold, inherits from object
-c_hold = c_object:new({
-	name = "hold",
-	sprites = {
-		default = {
-			number = 33,
-			hitbox = {o = vec2(0, 0), w = 8, h = 8 }
-		}
-	},
-})
-add(classes, c_hold:new({}))
-
 c_granola = c_object:new({
 	name = "granola",
 	sprites = {
@@ -470,7 +458,7 @@ c_player = c_entity:new({
 			end
 
 			local new_pos = vec2(self.p.x+new_vel.x, self.p.y+new_vel.y)
-			printh(abs(vdist(new_pos, self.holding_pos)))
+			-- printh(abs(vdist(new_pos, self.holding_pos)))
 			if abs(vdist(new_pos, self.holding_pos)) <= self.hold_wiggle then
 				self.v = new_vel
 			else
@@ -535,7 +523,7 @@ c_player = c_entity:new({
 			if self.holding == false and self.on_hold then
 				-- first grabbed, stick position and reset jump
 				self.holding_pos = vec2(self.p.x, self.p.y)
-				printh("GRABBED")
+				-- printh("GRABBED")
 				self.v = vec2(0, 0)
 				self.num_jumps = 0
 			end
@@ -787,12 +775,17 @@ c_player = c_entity:new({
 		self:anim()
 		c_entity.move(self)
 	end,
-	collide = function(self, actor)
-		if c_entity.collide(self, actor) then
-			if actor.name == "hold" then
-				self.on_hold = true
+	hold_collide = function(self)
+		for i = 0, 7 do
+			for j = 0, 7 do
+				if hold_tile(self.p.x+i, self.p.y+j) then
+					return true
+				end
 			end
 		end
+		return false
+	end,
+	collide = function(self, actor)
 		if c_entity.collide(self, actor) then
 			if actor.name == "granola" then
 				self.stamina = self.max_stamina
@@ -919,7 +912,6 @@ c_hud = c_object:new({
 })
 add(classes, c_hud:new({}))
 
-
 levels = {
 	{
 		name = "Level 1",
@@ -979,8 +971,8 @@ function load_level(level_number)
 			local screen = level.screens[x+1].dim[y+1]
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
-				printh(x..","..y)
-				printh("screen_pos: "..screen.x..","..screen.y)
+				-- printh(x..","..y)
+				-- printh("screen_pos: "..screen.x..","..screen.y)
 				for sx = 0, 7 do
 					for sy = 0, 7 do
 						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
@@ -988,24 +980,14 @@ function load_level(level_number)
 						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
 						-- printh("world_pos: "..world_pos.x..","..world_pos.y)
 						local tile = mget(mapped_pos.x, mapped_pos.y)
-						if fget(tile, 2) then
-							printh("adding "..tile)
-							-- fixme: how to get hitbox?
-							add(actors, c_hold:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
-						end
-						if tile == 1 then
+						if tile == 1 then -- player
 							foreach(classes, function(c)
 								load_obj(world_pos, c)
 								mset(mapped_pos.x, mapped_pos.y, 0)
 							end)
-						elseif tile == 24 then
-							add(actors, c_object:new({p = world_pos, sprite = {number=tile, hitbox = {o = vec2(0, 0), w = 8, h = 8} }}))
-
-							printh('here')
 						end
-						
 						mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
-						printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
+						-- printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
 					end
 				end
 			end
@@ -1022,10 +1004,14 @@ function finish_level()
 	printh("time taken "..formatted_time.hours..":"..formatted_time.minutes..":"..formatted_time.seconds)
 end
 
+function clear_state()
+	actors = {}
+	particles = {}
+	player = nil
+end
+
 function load_obj(pos, o)
-	if o.name == "hold" then
-		add(actors, c_hold:new({p = vec2(pos.x * 8, pos.y * 8)}))
-	elseif o.name == "granola" then
+	if o.name == "granola" then
 		add(actors, c_granola:new({p = vec2(pos.x*8, pos.y*8)}))
 	elseif o.name == "chalk" then
 		add(actors, c_chalk:new({p = vec2(pos.x*8, pos.y*8)}))
@@ -1033,7 +1019,7 @@ function load_obj(pos, o)
 		add(actors, c_chalkhold:new({p = vec2(pos.x*8, pos.y*8)}))
 	end
 	if o.name == "player" then
-		printh("added player")
+		-- printh("added player")
 		player = o:new({p = pos})
 	end
 end
@@ -1041,6 +1027,7 @@ end
 -- fixme: can't grab holds because no load
 function draw_level(level_number)
 	level = levels[level_number]
+	clip(cam.x, cam.y, 64, 64)
 	srand(800)
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
@@ -1063,7 +1050,7 @@ end
 
 -- reset the map from rom (if you make in-ram changes)
 function reload_map()
-	reset(0x2000, 0x2000, 0x1000)
+	reload(0x2000, 0x2000, 0x1000)
 	poke(0x5f2c,3) -- enable 64 bit mode
 	-- set lavender to the transparent color
 	palt(0, false)
@@ -1093,6 +1080,8 @@ end
 function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
 	player.on_chalkhold = false
+	-- fixme: use sprite flags for collisions!
+	player.on_hold = player:hold_collide()
 	foreach(actors, function(a)
 		-- a:move()
 		player:collide(a)
