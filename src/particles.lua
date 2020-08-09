@@ -34,19 +34,6 @@ c_particle = {
   end,
   draw = function(self)
     line(self.lastpos.x, self.lastpos.y, self.p.x, self.p.y, self.c)
-  end,
-  test = function(self)
-    for i = 1, 10, 1 do
-      local particle = self:new({
-        p = vec2(32, 32),
-        lastpos = vec2(32, 32),
-        c = flr(rnd(16)),
-        g = 300,
-        v = vec2(rnd(64)-32, rnd(64)-32),
-        dt = 0.05
-        })
-        add(particles, particle)
-    end
   end
 }
 
@@ -56,20 +43,6 @@ s_particle = c_particle:new({
   sprites = nil,
   draw = function(self)
     spr(self.sprites[1].number, self.p.x, self.p.y, 1, 1, self.sprites.flip)
-  end,
-  test = function(self)
-    for i = 1, 10, 1 do
-      local particle = self:new({
-      p = vec2(32, 32),
-      lastpos = vec2(32, 32),
-      g = 30,
-      life = 30,
-      v = vec2(rnd(64)-32, rnd(64)-32),
-      dt = 0.1,
-      add(self.sprites, c_sprite:new({number = 11}))
-      })
-      add(particles, particle)
-    end
   end,
   new = function(self, o)
     local o = o or {}
@@ -90,7 +63,8 @@ smokepuff = s_particle:new({
 	flip = false,
   life = 4,
   draw = function(self)
-    local time = clamp(self.time, 1, 4)
+    --local time = clamp(self.time, 1, 4)
+		local time = mid(1, self.time, 4)
 		spr(self.sprites[time], self.p.x, self.p.y, 1, 1, self.flip)
   end,
   new = function(self, o)
@@ -108,7 +82,8 @@ airjump = s_particle:new({
 	sprites = {48, 32, 16},
 	life = 3,
 	draw = function(self)
-		local time = clamp(self.time, 1, 4)
+		--local time = clamp(self.time, 1, 4)
+		local time = mid(1, self.time, 4)
 		spr(self.sprites[time], self.p.x, self.p.y)
 	end
 })
@@ -192,28 +167,6 @@ c_strut = {
     setmetatable(o, self)
     self.__index = self
     return o
-  end,
-  test = function(self)
-    local s1 = c_strut:new({
-      ends = {
-        c_particle:new({
-          p = vec2(32, 20),
-          v = vec2(-20, 0),
-          g = 0,
-          m = 1
-        }),
-        c_particle:new({
-          p = vec2(32, 40),
-          v = vec2(20, 0),
-          g = 5,
-          m = 1
-        })
-      },
-      ks = 1,
-      kd = 0.1,
-      ideal =30
-    })
-    add(particles, s1)
   end
 }
 

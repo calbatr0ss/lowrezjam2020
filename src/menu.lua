@@ -1,12 +1,12 @@
 c_arrows = c_object:new({
 	yo = 0,
-	y = 33,
+	y = 18,
 	items = {
 		"credits",
 		"music",
 		"level"
 	},
-	index = 2,
+	index = 3,
 	music = "on",
 	currentitem = "levels",
 	moved = function(self)
@@ -66,7 +66,8 @@ function update_menu()
 		arrows:moveu()
 		arrows.index += 1
 	end
-	arrows.index = clamp(arrows.index, 1, #arrows.items)
+	--arrows.index = clamp(arrows.index, 1, #arrows.items)
+	arrows.index = mid(1, arrows.index, #arrows.items)
 	arrows.currentitem = arrows.items[arrows.index]
 	if arrows.music == "off" then
 		jukebox:stopplaying()
@@ -74,7 +75,8 @@ function update_menu()
 		jukebox.playing = true
 		jukebox:startplayingnow(2, 1000, 7)
 	end
-	levelselection = clamp(levelselection, 1, #levels)
+	--levelselection = clamp(levelselection, 1, #levels)
+	levelselection = mid(1, levelselection, #levels)
 	if btnp(input.o) or btnp(input.x) then
 		if arrows.currentitem != "credits" then
 			init_game()
