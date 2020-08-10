@@ -9,7 +9,6 @@
   -- music
 
 coroutines = {}
-lastframebtns = {l = -1, r = -1, u = -1, d = -1, o = -1 , x = -1}
 player = nil
 g_force = 0.2
 display = 64
@@ -565,6 +564,23 @@ c_player = c_entity:new({
 				name = "walk",
 				rules = {
 					function(p)
+						if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
+						if p.holding then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
+							 return "hold"
+						 end
+						if (p.v.y < 0 and p.grounded) return "jumping"
+						if (p.v.y > 0.01) return "falling"
+						return "walk"
+					end
+				}
+			},
+			--[[
+			walk = {
+				name = "walk",
+				rules = {
+					function(p)
 						if abs(p.v.x) <= 0.01 and p.holding == false then
 							return "default"
 						end
@@ -582,8 +598,22 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
+			},--]]
 			jumping = {
+				name = "jumping",
+				rules = {
+					function(p)
+						if (p.holding) then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
+							return "hold"
+						end
+						if(p.v.y == 0) return "default"
+						if (p.v.y > 0) return "falling"
+					end
+				}
+			},
+			--[[jumping = {
 				name = "jumping",
 				rules = {
 					function(p)
@@ -599,11 +629,21 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
+			},--]]
 			hold = {
 				name = "hold",
 				rules = {
 					function(p)
+						if (p.v.y < 0 and p.holding == false) return "falling"
+						if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
+						if (abs(p.v.x) >= 0.01 and p.holding == true) return "shimmyx"
+						if (abs(p.v.y) >= 0.01 and p.holding == true) return "shimmyy"
+						if (not p.holding) return "default"
+						return "hold"
+					end
+				}
+			},
+					--[[function(p)
 						if p.v.y < 0 and p.holding == false then
 							return "falling"
 						end
@@ -615,24 +655,54 @@ c_player = c_entity:new({
 					end,
 					function(p)
 						if p.v.x >= 0.01 and p.holding == true then
-							return "shimmyr"
+							return "shimmyy"
 						end
 						if p.v.y <= -0.01 and p.holding == true then
-							return "shimmyl"
+							return "shimmyx"
 						end
 					end,
 					function(p)
 						if (not p.holding) return "default"
 					end
-				}
-			},
-			shimmyl = {
-				name = "shimmyl",
+				}--]]
+			--[[
+			shimmyx = {
+				name = "shimmyx",
 				rules = {
 					function(p)
 						if abs(p.v.x) < 0.01 and p.holding == true then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
+							--sfx(6, -2)
+							--sfx(6, -1, 0, 7)
+							return "hold"
+						end
+					end,
+					function(p)
+						if (not p.holding) return "default"
+					end,
+					function(p)
+						if (not p.holding) and p.v.y < 0.0 then
+							return "falling"
+						end
+					end
+				}--]]
+			shimmyx = {
+				name = "shimmyx",
+				rules = {
+					function(p)
+						if (abs(p.v.x) < 0.01 and p.holding) return "hold"
+						if (not p.holding) return "default"
+						if (not p.holding and p.v.y < 0.0) return "falling"
+						return "shimmyx"
+					end
+				}
+			},
+			--[[shimmyy = {
+				name = "shimmyy",
+				rules = {
+					function(p)
+						if abs(p.v.y) < 0.01 and p.holding == true then
+							--sfx(6, -2)
+							--sfx(6, -1, 0, 7)
 							return "hold"
 						end
 					end,
@@ -645,24 +715,15 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
-			shimmyr = {
-				name = "shimmyr",
+			},--]]
+			shimmyy = {
+				name = "shimmyy",
 				rules = {
 					function(p)
-						if abs(p.v.x) < 0.01 and p.holding == true then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
-							return "hold"
-						end
-					end,
-					function(p)
+						if (abs(p.v.y) < 0.01 and p.holding) return "hold"
 						if (not p.holding) return "default"
-					end,
-					function(p)
-						if not p.holding and p.v.y < 0.0 then
-							return "falling"
-						end
+						if (not p.holding and p.v.y < 0.0) return "falling"
+						return "shimmyy"
 					end
 				}
 			},
@@ -723,6 +784,7 @@ c_player = c_entity:new({
 					name = "dead",
 					rules = {
 						function(p)
+							p.dead = true
 							return "dead"
 						end
 					}
@@ -738,7 +800,7 @@ c_player = c_entity:new({
 				frames = {5, 6, 7},
 				fc = 3
 			}),
-			shimmy = c_anim:new({
+			shimmyx = c_anim:new({
 				frames = {8, 9, 10},
 				fc = 3
 			}),
@@ -800,10 +862,10 @@ c_player = c_entity:new({
 			end
 		end
 	end,
-	die = function(self)
-		self.v = vec2(0, 0)
+--[[	die = function(self)
+		sfx(0)
 		self.dead = true
-	end,
+	end,--]]
 	anim = function(self)
 		--self:determinestate()
 		local frame = 1
@@ -827,10 +889,14 @@ c_player = c_entity:new({
 		elseif state == "hold" then
 			number = 5
 			if (self.jump_newly_pressed) hud:shakehand()
-		elseif state == "shimmyl" then
-			number = 13
-		elseif state == "shimmyr" then
-			number = 13
+		elseif state == "shimmyx" then
+			self.anims.shimmyx.playing = true
+			self.anims.shimmyx:loopforward()
+			number = self.anims.shimmyx.frames[self.anims.shimmyx.currentframe]
+		elseif state == "shimmyy" then
+			self.anims.hold.playing = true
+			self.anims.hold:loopforward()
+			number = self.anims.hold.frames[self.anims.hold.currentframe]
 		elseif state=="jumping" then
 			number = 2
 		elseif state == "falling" then
@@ -1059,17 +1125,6 @@ function _init()
 	init_screen()
 end
 
-function update_last_btns()
-	lastframebtns = {l = -1, r = -1, u = -1, d = -1, o = -1 , x = -1}
-	btns = btn()
-	if (band(1, btns) == 1) lastframebtns.l = 1
-	if (band(2, btns) == 2) lastframebtns.r = 1
-	if (band(4, btns) == 4) lastframebtns.u = 1
-	if (band(8, btns) == 8) lastframebtns.d = 1
-	if (band(16, btns) == 16) lastframebtns.o = 1
-	if (band(32, btns) == 32) lastframebtns.x = 1
-end
-
 function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
 	player.on_chalkhold = false
@@ -1079,17 +1134,19 @@ function update_game()
 		-- a:move()
 		player:collide(a)
 	end)
-	player:move()
+	if (not player.dead) player:move()
 	resumecoroutines()
 	cam:update(player.p)
-	update_last_btns()
 end
 
 function draw_game()
 	cls()
 	--testtiles()
 	-- testanimation()
-	draw_level()
+
+	draw_level(levelselection)
+	--vectortests()
+
 	foreach(actors, function(a) a:draw() end)
 
 	toprope:drawrope()
@@ -1111,7 +1168,6 @@ function init_game()
 
 	player.statemachine.parent = player
 	hud = c_hud:new({})
-	five = 5
 	toprope = rope:create()
 	-- this if statement prevents a bug when resuming after returning to menu
 	if parts == nil then
