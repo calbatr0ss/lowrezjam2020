@@ -553,6 +553,23 @@ c_player = c_entity:new({
 				name = "walk",
 				rules = {
 					function(p)
+						if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
+						if p.holding then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
+							 return "hold"
+						 end
+						if (p.v.y < 0 and p.grounded) return "jumping"
+						if (p.v.y > 0.01) return "falling"
+						return "walk"
+					end
+				}
+			},
+			--[[
+			walk = {
+				name = "walk",
+				rules = {
+					function(p)
 						if abs(p.v.x) <= 0.01 and p.holding == false then
 							return "default"
 						end
@@ -570,8 +587,22 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
+			},--]]
 			jumping = {
+				name = "jumping",
+				rules = {
+					function(p)
+						if (p.holding) then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
+							return "hold"
+						end
+						if(p.v.y == 0) return "default"
+						if (p.v.y > 0) return "falling"
+					end
+				}
+			},
+			--[[jumping = {
 				name = "jumping",
 				rules = {
 					function(p)
@@ -587,11 +618,21 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
+			},--]]
 			hold = {
 				name = "hold",
 				rules = {
 					function(p)
+						if (p.v.y < 0 and p.holding == false) return "falling"
+						if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
+						if (abs(p.v.x) >= 0.01 and p.holding == true) return "shimmyx"
+						if (abs(p.v.y) >= 0.01 and p.holding == true) return "shimmyy"
+						if (not p.holding) return "default"
+						return "hold"
+					end
+				}
+			},
+					--[[function(p)
 						if p.v.y < 0 and p.holding == false then
 							return "falling"
 						end
@@ -603,24 +644,54 @@ c_player = c_entity:new({
 					end,
 					function(p)
 						if p.v.x >= 0.01 and p.holding == true then
-							return "shimmyr"
+							return "shimmyy"
 						end
 						if p.v.y <= -0.01 and p.holding == true then
-							return "shimmyl"
+							return "shimmyx"
 						end
 					end,
 					function(p)
 						if (not p.holding) return "default"
 					end
-				}
-			},
-			shimmyl = {
-				name = "shimmyl",
+				}--]]
+			--[[
+			shimmyx = {
+				name = "shimmyx",
 				rules = {
 					function(p)
 						if abs(p.v.x) < 0.01 and p.holding == true then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
+							--sfx(6, -2)
+							--sfx(6, -1, 0, 7)
+							return "hold"
+						end
+					end,
+					function(p)
+						if (not p.holding) return "default"
+					end,
+					function(p)
+						if (not p.holding) and p.v.y < 0.0 then
+							return "falling"
+						end
+					end
+				}--]]
+			shimmyx = {
+				name = "shimmyx",
+				rules = {
+					function(p)
+						if (abs(p.v.x) < 0.01 and p.holding) return "hold"
+						if (not p.holding) return "default"
+						if (not p.holding and p.v.y < 0.0) return "falling"
+						return "shimmyx"
+					end
+				}
+			},
+			--[[shimmyy = {
+				name = "shimmyy",
+				rules = {
+					function(p)
+						if abs(p.v.y) < 0.01 and p.holding == true then
+							--sfx(6, -2)
+							--sfx(6, -1, 0, 7)
 							return "hold"
 						end
 					end,
@@ -633,24 +704,15 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
-			shimmyr = {
-				name = "shimmyr",
+			},--]]
+			shimmyy = {
+				name = "shimmyy",
 				rules = {
 					function(p)
-						if abs(p.v.x) < 0.01 and p.holding == true then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
-							return "hold"
-						end
-					end,
-					function(p)
+						if (abs(p.v.y) < 0.01 and p.holding) return "hold"
 						if (not p.holding) return "default"
-					end,
-					function(p)
-						if not p.holding and p.v.y < 0.0 then
-							return "falling"
-						end
+						if (not p.holding and p.v.y < 0.0) return "falling"
+						return "shimmyy"
 					end
 				}
 			},
@@ -710,6 +772,7 @@ c_player = c_entity:new({
 					name = "dead",
 					rules = {
 						function(p)
+							p.dead = true
 							return "dead"
 						end
 					}
@@ -725,7 +788,7 @@ c_player = c_entity:new({
 				frames = {5, 6, 7},
 				fc = 3
 			}),
-			shimmy = c_anim:new({
+			shimmyx = c_anim:new({
 				frames = {8, 9, 10},
 				fc = 3
 			}),
@@ -787,10 +850,10 @@ c_player = c_entity:new({
 			end
 		end
 	end,
-	die = function(self)
+--[[]	die = function(self)
 		sfx(0)
 		self.dead = true
-	end,
+	end,--]]
 	anim = function(self)
 		--self:determinestate()
 		local frame = 1
@@ -814,10 +877,14 @@ c_player = c_entity:new({
 		elseif state == "hold" then
 			number = 5
 			if (self.jump_newly_pressed) hud:shakehand()
-		elseif state == "shimmyl" then
-			number = 13
-		elseif state == "shimmyr" then
-			number = 13
+		elseif state == "shimmyx" then
+			self.anims.shimmyx.playing = true
+			self.anims.shimmyx:loopforward()
+			number = self.anims.shimmyx.frames[self.anims.shimmyx.currentframe]
+		elseif state == "shimmyy" then
+			self.anims.hold.playing = true
+			self.anims.hold:loopforward()
+			number = self.anims.hold.frames[self.anims.hold.currentframe]
 		elseif state=="jumping" then
 			number = 2
 		elseif state == "falling" then
@@ -1067,7 +1134,7 @@ function update_game()
 		-- a:move()
 		player:collide(a)
 	end)
-	player:move()
+	if (not player.dead) player:move()
 	resumecoroutines()
 	cam:update(player.p)
 	update_last_btns()
