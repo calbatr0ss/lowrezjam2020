@@ -1078,8 +1078,7 @@ function load_obj(pos, o)
 		add(actors, c_chalk:new({p = vec2(pos.x*8, pos.y*8)}))
 	elseif o.name == "chalkhold" then
 		add(actors, c_chalkhold:new({p = vec2(pos.x*8, pos.y*8)}))
-	end
-	if o.name == "player" then
+	elseif o.name == "player" then
 		-- printh("added player")
 		player = o:new({p = pos})
 	end
@@ -1134,7 +1133,12 @@ function update_game()
 		-- a:move()
 		player:collide(a)
 	end)
-	if (not player.dead) player:move()
+	if (not player.dead) then
+		player:move()
+	else
+		rspwn = cocreate(respawn)
+		add(coroutines, rspwn)
+	end
 	resumecoroutines()
 	cam:update(player.p)
 end
@@ -1154,7 +1158,7 @@ function draw_game()
 	drawparticles()
 	cam:update(player.p)
 	hud:draw()
-	print("cpu "..stat(1), player.p.x, player.p.y - 5, 7)
+	--print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
 	gl:draw()
 end
 
@@ -1176,6 +1180,26 @@ function init_game()
 	end
 	menuitem(1, "back to menu", init_menu)
 	jukebox:startplayingnow(3, 2000, 11)
+end
+
+function respawn()
+	local respawntimer = time() + 1
+	while time() < respawntimer and player.dead do
+		yield()
+	end
+	player.dead = false
+	--player.statemachine.state
+	clear_state()
+	init_game()
+	for i = 1, 10, 1 do
+		local o = player.p + vec2(sin(10/i) * 10 - 4, cos(10/i) * 10 - 4)
+		local p = c_particle:new({p = player.p + vec2(sin(10/i) * 15, cos(10/i) * 15), v = (player.p-o)*5, life = 10, c = 14})
+		--p.pastpos = p.p
+		add(particles, p)
+	end
+--	load_level(levelselection)
+--	player.statemachine.parent = player
+--	player.p = vec2(0, 0)
 end
 
 c_hud = c_object:new({
