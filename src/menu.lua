@@ -4,7 +4,7 @@ c_arrows = c_object:new({
 	items = {
 		"credits",
 		"music",
-		"level"
+		"levels"
 	},
 	index = 3,
 	music = "on",
