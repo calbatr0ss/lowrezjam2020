@@ -9,7 +9,6 @@
   -- music
 
 coroutines = {}
-lastframebtns = {l = -1, r = -1, u = -1, d = -1, o = -1 , x = -1}
 player = nil
 g_force = 0.2
 display = 64
@@ -239,9 +238,9 @@ c_object = c_sprite:new({
 		-- if right_tile_collide(self) then self.p.x -= 1 end
 		-- if left_tile_collide(self) then self.p.x += 1 end
 
-		-- push out of left boundary... todo: needed?
-		-- while calc_edges(self).l < 0 do self.p.x += 1 end
-		-- while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
+		-- keep inside level boundary
+		while calc_edges(self).l < 0 do self.p.x += 1 end
+		while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
 
 		if floor_tile_collide(self) then
 			self.p.y = flr(self.p.y) -- prevent visually stuck in ground
@@ -399,18 +398,22 @@ c_player = c_entity:new({
 	dead = false,
 	on_hold = false,
 	holding_pos = vec2(0, 0),
+	last_held = 0,
+	was_holding = false,
 	hold_wiggle = 3,
 	hold_spd = 0.5,
 	hold_topspd = 0.75,
+	holding = false,
+	holding_cooldown = 0.3, -- 300ms
 	on_chalkhold = false,
 	chalkhold = nil,
 	has_chalk = false,
-	holding = false,
 	stamina = 100,
 	max_stamina = 100,
-	stamina_regen_rate = 2,
+	stamina_regen_rate = 3,
 	stamina_regen_cor = nil,
-	input=function(self)
+	input = function(self)
+		if self.dead then return end -- no zombies
 		if self.holding then
 			local new_vel = vec2(0, 0)
 			if btn(input.u) then
@@ -494,26 +497,34 @@ c_player = c_entity:new({
 		end
 
 		-- hold
+		local can_hold_again = (time() - self.last_held) > self.holding_cooldown
 		if btn(input.o) then
-			if self.holding == false and self.on_hold then
-				-- first grabbed, stick position and reset jump
-				self.holding_pos = vec2(self.p.x, self.p.y)
-				-- printh("GRABBED")
-				self.v = vec2(0, 0)
-				self.num_jumps = 0
-			end
-			if self.on_hold then
-				self.holding = true
-			elseif self.on_chalkhold and self.has_chalk then
-				self.chalkhold.activated = true
-				sfx(5)
-				self.has_chalk = false
+			if can_hold_again then
+				if self.on_hold then
+					if self.holding == false then
+						-- first grabbed, stick position and reset jump
+						self.holding_pos = vec2(self.p.x, self.p.y)
+						self.was_holding = true
+						-- printh("GRABBED")
+						self.v = vec2(0, 0)
+						self.num_jumps = 0
+					end
+					self.holding = true
+				elseif self.on_chalkhold and self.has_chalk then
+					self.chalkhold.activated = true
+					sfx(5)
+					self.has_chalk = false
+				end
 			end
 		else
 			self.holding = false
 		end
 		if not self.on_hold then
 			self.holding = false
+		end
+		if self.was_holding and not self.holding then
+			self.last_held = time()
+			self.was_holding = false
 		end
 	end,
 	regen_stamina = function(self)
@@ -553,6 +564,23 @@ c_player = c_entity:new({
 				name = "walk",
 				rules = {
 					function(p)
+						if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
+						if p.holding then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
+							 return "hold"
+						 end
+						if (p.v.y < 0 and p.grounded) return "jumping"
+						if (p.v.y > 0.01) return "falling"
+						return "walk"
+					end
+				}
+			},
+			--[[
+			walk = {
+				name = "walk",
+				rules = {
+					function(p)
 						if abs(p.v.x) <= 0.01 and p.holding == false then
 							return "default"
 						end
@@ -570,8 +598,22 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
+			},--]]
 			jumping = {
+				name = "jumping",
+				rules = {
+					function(p)
+						if (p.holding) then
+							sfx(6, -2)
+							sfx(6, -1, 0, 7)
+							return "hold"
+						end
+						if(p.v.y == 0) return "default"
+						if (p.v.y > 0) return "falling"
+					end
+				}
+			},
+			--[[jumping = {
 				name = "jumping",
 				rules = {
 					function(p)
@@ -587,11 +629,21 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
+			},--]]
 			hold = {
 				name = "hold",
 				rules = {
 					function(p)
+						if (p.v.y < 0 and p.holding == false) return "falling"
+						if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
+						if (abs(p.v.x) >= 0.01 and p.holding == true) return "shimmyx"
+						if (abs(p.v.y) >= 0.01 and p.holding == true) return "shimmyy"
+						if (not p.holding) return "default"
+						return "hold"
+					end
+				}
+			},
+					--[[function(p)
 						if p.v.y < 0 and p.holding == false then
 							return "falling"
 						end
@@ -603,24 +655,54 @@ c_player = c_entity:new({
 					end,
 					function(p)
 						if p.v.x >= 0.01 and p.holding == true then
-							return "shimmyr"
+							return "shimmyy"
 						end
 						if p.v.y <= -0.01 and p.holding == true then
-							return "shimmyl"
+							return "shimmyx"
 						end
 					end,
 					function(p)
 						if (not p.holding) return "default"
 					end
-				}
-			},
-			shimmyl = {
-				name = "shimmyl",
+				}--]]
+			--[[
+			shimmyx = {
+				name = "shimmyx",
 				rules = {
 					function(p)
 						if abs(p.v.x) < 0.01 and p.holding == true then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
+							--sfx(6, -2)
+							--sfx(6, -1, 0, 7)
+							return "hold"
+						end
+					end,
+					function(p)
+						if (not p.holding) return "default"
+					end,
+					function(p)
+						if (not p.holding) and p.v.y < 0.0 then
+							return "falling"
+						end
+					end
+				}--]]
+			shimmyx = {
+				name = "shimmyx",
+				rules = {
+					function(p)
+						if (abs(p.v.x) < 0.01 and p.holding) return "hold"
+						if (not p.holding) return "default"
+						if (not p.holding and p.v.y < 0.0) return "falling"
+						return "shimmyx"
+					end
+				}
+			},
+			--[[shimmyy = {
+				name = "shimmyy",
+				rules = {
+					function(p)
+						if abs(p.v.y) < 0.01 and p.holding == true then
+							--sfx(6, -2)
+							--sfx(6, -1, 0, 7)
 							return "hold"
 						end
 					end,
@@ -633,24 +715,15 @@ c_player = c_entity:new({
 						end
 					end
 				}
-			},
-			shimmyr = {
-				name = "shimmyr",
+			},--]]
+			shimmyy = {
+				name = "shimmyy",
 				rules = {
 					function(p)
-						if abs(p.v.x) < 0.01 and p.holding == true then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
-							return "hold"
-						end
-					end,
-					function(p)
+						if (abs(p.v.y) < 0.01 and p.holding) return "hold"
 						if (not p.holding) return "default"
-					end,
-					function(p)
-						if not p.holding and p.v.y < 0.0 then
-							return "falling"
-						end
+						if (not p.holding and p.v.y < 0.0) return "falling"
+						return "shimmyy"
 					end
 				}
 			},
@@ -687,6 +760,7 @@ c_player = c_entity:new({
 								}))
 								sfx(9)
 							end
+							player:die()
 							return "dead"
 						end
 					end,
@@ -710,6 +784,7 @@ c_player = c_entity:new({
 					name = "dead",
 					rules = {
 						function(p)
+							p.dead = true
 							return "dead"
 						end
 					}
@@ -725,7 +800,7 @@ c_player = c_entity:new({
 				frames = {5, 6, 7},
 				fc = 3
 			}),
-			shimmy = c_anim:new({
+			shimmyx = c_anim:new({
 				frames = {8, 9, 10},
 				fc = 3
 			}),
@@ -787,10 +862,10 @@ c_player = c_entity:new({
 			end
 		end
 	end,
-	die = function(self)
+--[[	die = function(self)
 		sfx(0)
 		self.dead = true
-	end,
+	end,--]]
 	anim = function(self)
 		--self:determinestate()
 		local frame = 1
@@ -814,10 +889,14 @@ c_player = c_entity:new({
 		elseif state == "hold" then
 			number = 5
 			if (self.jump_newly_pressed) hud:shakehand()
-		elseif state == "shimmyl" then
-			number = 13
-		elseif state == "shimmyr" then
-			number = 13
+		elseif state == "shimmyx" then
+			self.anims.shimmyx.playing = true
+			self.anims.shimmyx:loopforward()
+			number = self.anims.shimmyx.frames[self.anims.shimmyx.currentframe]
+		elseif state == "shimmyy" then
+			self.anims.hold.playing = true
+			self.anims.hold:loopforward()
+			number = self.anims.hold.frames[self.anims.hold.currentframe]
 		elseif state=="jumping" then
 			number = 2
 		elseif state == "falling" then
@@ -895,7 +974,7 @@ add(classes, c_hud:new({}))
 
 levels = {
 	{
-		name = "Level 1",
+		name = "test",
 		width = 2,
 		height = 3,
 		screens = {
@@ -905,7 +984,7 @@ levels = {
 				dim = {
 					vec2(1, 0),
 					vec2(1, 0),
-					vec2(0, 0),
+					vec2(0, 0)
 				},
 				bg = {
 					sprite = 18
@@ -915,7 +994,7 @@ levels = {
 				dim = {
 					vec2(1, 1),
 					vec2(1, 1),
-					vec2(0, 1),
+					vec2(0, 1)
 				},
 				bg = {
 					sprite = 18
@@ -924,19 +1003,20 @@ levels = {
 		}
 	},
 	{
-		name = "Level 2",
-		width = 2,
+		name = "approach",
+		width = 1,
 		height = 2,
 		screens = {
 			--width
 			{
 				--height
-				vec2(-1, -1),
-				vec2(0, 0),
-			},
-			{
-				vec2(-1, -1),
-				vec2(0, 1),
+				dim = {
+					vec2(-1, -1),
+					vec2(0, 2)
+				},
+				bg = {
+					sprite = 19
+				}
 			}
 		}
 	}
@@ -1005,9 +1085,7 @@ function load_obj(pos, o)
 	end
 end
 
--- fixme: can't grab holds because no load
-function draw_level(level_number)
-	level = levels[level_number]
+function draw_level()
 	clip(cam.x, cam.y, 64, 64)
 	srand(800)
 	for x = 0, level.width - 1 do
@@ -1047,17 +1125,6 @@ function _init()
 	init_screen()
 end
 
-function update_last_btns()
-	lastframebtns = {l = -1, r = -1, u = -1, d = -1, o = -1 , x = -1}
-	btns = btn()
-	if (band(1, btns) == 1) lastframebtns.l = 1
-	if (band(2, btns) == 2) lastframebtns.r = 1
-	if (band(4, btns) == 4) lastframebtns.u = 1
-	if (band(8, btns) == 8) lastframebtns.d = 1
-	if (band(16, btns) == 16) lastframebtns.o = 1
-	if (band(32, btns) == 32) lastframebtns.x = 1
-end
-
 function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
 	player.on_chalkhold = false
@@ -1067,18 +1134,19 @@ function update_game()
 		-- a:move()
 		player:collide(a)
 	end)
-	player:move()
+	if (not player.dead) player:move()
 	resumecoroutines()
 	cam:update(player.p)
-	update_last_btns()
 end
 
 function draw_game()
 	cls()
 	--testtiles()
 	-- testanimation()
-	draw_level(1)
+
+	draw_level(levelselection)
 	--vectortests()
+
 	foreach(actors, function(a) a:draw() end)
 
 	toprope:drawrope()
@@ -1086,7 +1154,6 @@ function draw_game()
 	drawparticles()
 	cam:update(player.p)
 	hud:draw()
-	if debug then print(debug) end
 	print("cpu "..stat(1), player.p.x, player.p.y - 5, 7)
 	gl:draw()
 end
@@ -1101,7 +1168,6 @@ function init_game()
 
 	player.statemachine.parent = player
 	hud = c_hud:new({})
-	five = 5
 	toprope = rope:create()
 	-- this if statement prevents a bug when resuming after returning to menu
 	if parts == nil then

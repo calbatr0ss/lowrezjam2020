@@ -4,7 +4,7 @@ c_arrows = c_object:new({
 	items = {
 		"credits",
 		"music",
-		"level"
+		"levels"
 	},
 	index = 3,
 	music = "on",
@@ -52,11 +52,11 @@ end
 function update_menu()
 	if btnp(input.l) then
 		sfx(10, -1, 0, 5)
-		if (arrows.currentitem == "levels") levelselection -= 1
+		if (arrows.currentitem == "level") levelselection -= 1
 		if (arrows.currentitem == "music") arrows.music = "off"
 	elseif btnp(input.r) then
 		sfx(10, -1, 0, 5)
-		if (arrows.currentitem == "levels") levelselection += 1
+		if (arrows.currentitem == "level") levelselection += 1
 		if (arrows.currentitem == "music") arrows.music = "on"
 	end
 	if btnp(input.d) and arrows.index != 1 then
@@ -80,18 +80,40 @@ function update_menu()
 	if btnp(input.o) or btnp(input.x) then
 		if arrows.currentitem != "credits" then
 			init_game()
+		else
+			_draw = drawcredits
+			_update = updatecredits
 		end
 	end
 end
 
 function draw_menu()
-	drawnoodles()
+	drawnoodles(20)
 	spr(1, 45, 0, 1, 1, true, true)
+	rectfill(10, 15, 53, 58, 15)
 	if screen == "menu" then
 		--print("level: "..levelselection, 15, 32, 1)
 		arrows:draw()
-		print(arrows.currentitem, 0, 0, 7)
+		print(#levels, 0, 0, 7)
 		jukebox:startplayingnow(2, 0, 7)
 	end
-	update_last_btns()
+end
+
+function drawcredits()
+	cls()
+	drawnoodles(21)
+	rectfill(0, 5, 64, 26, 15)
+	rectfill(0, 36, 64, 55, 15)
+	print("a hot beans game:", 0, 5, 1)
+	print("calvin moody", 10, 13, 1)
+	print("reagan burke", 10, 20, 1)
+	print("special thanks:", 3, 40, 1)
+	print("pico-grunt", 13, 48, 1)
+end
+
+function updatecredits()
+	if btnp(input.o) or btnp(input.x) then
+		_update = update_menu
+		_draw = draw_menu
+	end
 end
