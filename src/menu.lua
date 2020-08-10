@@ -97,7 +97,6 @@ function draw_menu()
 		print(#levels, 0, 0, 7)
 		jukebox:startplayingnow(2, 0, 7)
 	end
-	update_last_btns()
 end
 
 function drawcredits()

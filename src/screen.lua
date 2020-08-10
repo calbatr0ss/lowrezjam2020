@@ -6,7 +6,6 @@ function init_screen()
 	--_update = splash_update
 	_draw = splash_draw
 	_update = splash_update
-	update_last_btns()
 end
 
 function update_screen()
@@ -16,7 +15,6 @@ function update_screen()
 			init_menu()
 		end
 	end
-	update_last_btns()
 end
 
 function drawnoodles(s)
@@ -40,7 +38,6 @@ function draw_screen()
 		print("press ❎/🅾️", 11, 44, 1)
 		jukebox:startplayingnow(1, 2000, 9)
 	end
-			update_last_btns()
 end
 
 function splashinit()

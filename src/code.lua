@@ -9,7 +9,6 @@
   -- music
 
 coroutines = {}
-lastframebtns = {l = -1, r = -1, u = -1, d = -1, o = -1 , x = -1}
 player = nil
 g_force = 0.2
 display = 64
@@ -1114,17 +1113,6 @@ function _init()
 	init_screen()
 end
 
-function update_last_btns()
-	lastframebtns = {l = -1, r = -1, u = -1, d = -1, o = -1 , x = -1}
-	btns = btn()
-	if (band(1, btns) == 1) lastframebtns.l = 1
-	if (band(2, btns) == 2) lastframebtns.r = 1
-	if (band(4, btns) == 4) lastframebtns.u = 1
-	if (band(8, btns) == 8) lastframebtns.d = 1
-	if (band(16, btns) == 16) lastframebtns.o = 1
-	if (band(32, btns) == 32) lastframebtns.x = 1
-end
-
 function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
 	player.on_chalkhold = false
@@ -1134,17 +1122,22 @@ function update_game()
 		-- a:move()
 		player:collide(a)
 	end)
-	if (not player.dead) player:move()
+	if not player.dead then
+		player:move()
+	elseif player.dead then
+	--load_level(levelselection)
+	player.dead = false
+	player.state = "default"
+	end
 	resumecoroutines()
 	cam:update(player.p)
-	update_last_btns()
 end
 
 function draw_game()
 	cls()
 	--testtiles()
 	-- testanimation()
-	draw_level(1)
+	draw_level(levelselection)
 	--vectortests()
 	foreach(actors, function(a) a:draw() end)
 
@@ -1168,7 +1161,6 @@ function init_game()
 
 	player.statemachine.parent = player
 	hud = c_hud:new({})
-	five = 5
 	toprope = rope:create()
 	-- this if statement prevents a bug when resuming after returning to menu
 	if parts == nil then
