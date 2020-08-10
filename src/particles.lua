@@ -34,7 +34,14 @@ c_particle = {
   end,
   draw = function(self)
     line(self.lastpos.x, self.lastpos.y, self.p.x, self.p.y, self.c)
-  end
+  end,
+	new = function(self, o)
+		local o = o or {}
+		setmetatable(o, self)
+		self.__index = self
+		o.lastpos = o.p
+		return o
+	end
 }
 
 -- particle with animated sprites

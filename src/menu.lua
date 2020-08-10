@@ -52,11 +52,11 @@ end
 function update_menu()
 	if btnp(input.l) then
 		sfx(10, -1, 0, 5)
-		if (arrows.currentitem == "level") levelselection -= 1
+		if (arrows.currentitem == "levels") levelselection -= 1
 		if (arrows.currentitem == "music") arrows.music = "off"
 	elseif btnp(input.r) then
 		sfx(10, -1, 0, 5)
-		if (arrows.currentitem == "level") levelselection += 1
+		if (arrows.currentitem == "levels") levelselection += 1
 		if (arrows.currentitem == "music") arrows.music = "on"
 	end
 	if btnp(input.d) and arrows.index != 1 then
@@ -94,7 +94,8 @@ function draw_menu()
 	if screen == "menu" then
 		--print("level: "..levelselection, 15, 32, 1)
 		arrows:draw()
-		print(#levels, 0, 0, 7)
+		--print(#levels, 0, 0, 7)
+		print(arrows.currentitem, 0, 0, 7)
 		jukebox:startplayingnow(2, 0, 7)
 	end
 end
