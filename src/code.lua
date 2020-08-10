@@ -1122,13 +1122,7 @@ function update_game()
 		-- a:move()
 		player:collide(a)
 	end)
-	if not player.dead then
-		player:move()
-	elseif player.dead then
-	--load_level(levelselection)
-	player.dead = false
-	player.state = "default"
-	end
+	if (not player.dead) player:move()
 	resumecoroutines()
 	cam:update(player.p)
 end
