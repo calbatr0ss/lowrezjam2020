@@ -414,7 +414,7 @@ c_player = c_entity:new({
 	stamina_regen_rate = 3,
 	stamina_regen_cor = nil,
 	input = function(self)
-		if self.state == "dead" then return end -- no zombies
+		if self.dead then return end -- no zombies
 		if self.holding then
 			local new_vel = vec2(0, 0)
 			if btn(input.u) then
@@ -699,6 +699,7 @@ c_player = c_entity:new({
 								}))
 								sfx(9)
 							end
+							player:die()
 							return "dead"
 						end
 					end,
@@ -800,7 +801,7 @@ c_player = c_entity:new({
 		end
 	end,
 	die = function(self)
-		sfx(0)
+		self.v = vec2(0, 0)
 		self.dead = true
 	end,
 	anim = function(self)
