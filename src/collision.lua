@@ -49,12 +49,32 @@ function calc_edges(obj)
 	end
 end
 
+function ledge_tile(x, y)
+	return is_flag_at(x/8, y/8, 0)
+end
+
 function solid_tile(x, y)
 	return is_flag_at(x/8, y/8, 1)
 end
 
-function hold_tile(x, y)
+function jug_tile(x, y)
 	return is_flag_at(x/8, y/8, 2)
+end
+
+function crimp_tile(x, y)
+	return is_flag_at(x/8, y/8, 3)
+end
+
+function crack_tile(x, y)
+	return is_flag_at(x/8, y/8, 4)
+end
+
+function granola_tile(x, y)
+	return is_flag_at(x/8, y/8, 5)
+end
+
+function chalk_tile(x, y)
+	return is_flag_at(x/8, y/8, 5)
 end
 
 function is_flag_at(x, y, f)
