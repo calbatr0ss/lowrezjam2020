@@ -3,10 +3,11 @@
 
 -- flag reference
   -- sprite
-	-- 1: solid
-	-- 2: hold (jug)
-  -- sound effects
-  -- music
+	-- 0: ledges
+	-- 1: solid ground
+	-- 2: jug
+	-- 3: crimp
+	-- 4: crack
 
 coroutines = {}
 player = nil
@@ -263,7 +264,16 @@ c_object = c_sprite:new({
 })
 add(classes, c_object:new({}))
 
-c_granola = c_object:new({
+c_pickup = c_object:new({
+	name = "pickup",
+	map_pos = nil,
+	die = function(self)
+		mset(self.map_pos.x, self.map_pos.y, 0)
+	end
+})
+add(classes, c_pickup:new({}))
+
+c_granola = c_pickup:new({
 	name = "granola",
 	sprites = {
 		default = {
@@ -310,7 +320,7 @@ c_chalkhold = c_object:new({
 })
 add(classes, c_chalkhold:new({}))
 
-c_chalk = c_object:new({
+c_chalk = c_pickup:new({
 	name = "chalk",
 	sprites = {
 		default = {
@@ -828,7 +838,7 @@ c_player = c_entity:new({
 	hold_collide = function(self)
 		for i = 0, 7 do
 			for j = 0, 7 do
-				if hold_tile(self.p.x+i, self.p.y+j) then
+				if jug_tile(self.p.x+i, self.p.y+j) then
 					return true
 				end
 			end
@@ -841,6 +851,7 @@ c_player = c_entity:new({
 				self.stamina = self.max_stamina
 				sfx(2, -2)
 				sfx(2, -1, 0, 9)
+				actor:die()
 				del(actors, actor)
 			end
 		end
@@ -848,6 +859,7 @@ c_player = c_entity:new({
 			if actor.name == "chalk" then
 				self.has_chalk = true
 				sfx(4, -1, 0, 10)
+				actor:die()
 				del(actors, actor)
 			end
 		end
@@ -1100,12 +1112,9 @@ function load_level(level_number)
 						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
 						-- printh("world_pos: "..world_pos.x..","..world_pos.y)
 						local tile = mget(mapped_pos.x, mapped_pos.y)
-						if tile == 1 then -- player
-							foreach(classes, function(c)
-								load_obj(world_pos, c)
-								mset(mapped_pos.x, mapped_pos.y, 0)
-							end)
-						end
+						foreach(classes, function(c)
+							load_obj(world_pos, mapped_pos, c, tile)
+						end)
 						mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
 						-- printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
 					end
@@ -1130,16 +1139,24 @@ function clear_state()
 	player = nil
 end
 
-function load_obj(pos, o)
-	if o.name == "granola" then
-		add(actors, c_granola:new({p = vec2(pos.x*8, pos.y*8)}))
-	elseif o.name == "chalk" then
-		add(actors, c_chalk:new({p = vec2(pos.x*8, pos.y*8)}))
-	elseif o.name == "chalkhold" then
-		add(actors, c_chalkhold:new({p = vec2(pos.x*8, pos.y*8)}))
-	elseif o.name == "player" then
-		-- printh("added player")
-		player = o:new({p = pos})
+function load_obj(w_pos, m_pos, class, tile)
+	local sprite = class.sprites.default.number
+	if sprite == tile then
+		if class.name == "granola" then
+			printh("added granola")
+			add(actors, class:new({p = vec2(w_pos.x, w_pos.y), map_pos = m_pos}))
+		elseif class.name == "chalk" then
+			printh("added chalk")
+			add(actors, class:new({p = vec2(w_pos.x, w_pos.y), map_pos = m_pos}))
+		elseif class.name == "chalkhold" then
+			-- todo: fix chalkholds?
+			add(actors, class:new({p = vec2(w_pos.x*8, w_pos.y*8)}))
+		elseif class.name == "player" then
+			player = class:new({p = w_pos})
+			mset(m_pos.x, m_pos.y, 0)
+		elseif class.name == "goal" then
+			-- todo: make a goal
+		end
 	end
 end
 
@@ -1188,20 +1205,21 @@ function draw_level()
 	end
 end
 
--- reset the map from rom (if you make in-ram changes)
-function reload_map()
-	reload(0x2000, 0x2000, 0x1000)
+function setup()
 	poke(0x5f2c,3) -- enable 64 bit mode
 	-- set lavender to the transparent color
 	palt(0, false)
 	palt(13, true)
 end
 
+-- reset the map from rom (if you make in-ram changes)
+function reload_map()
+	reload(0x2000, 0x2000, 0x1000)
+	setup()
+end
+
 function _init()
-	poke(0x5f2c,3) -- enable 64 bit mode
-	-- set lavender to the transparent color
-	palt(0, false)
-	palt(13, true)
+	setup()
 	jukebox = c_jukebox:new({})
 	init_screen()
 end
@@ -1241,7 +1259,8 @@ function draw_game()
 	--drawtrees()
 	cam:update(player.p)
 	hud:draw()
-	--print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
+	print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
+	gl:draw()
 end
 
 function init_game()
@@ -1273,7 +1292,6 @@ function respawn()
 		yield()
 	end
 	player.dead = false
-	--player.statemachine.state
 	clear_state()
 	init_game()
 	for i = 1, 10, 1 do
