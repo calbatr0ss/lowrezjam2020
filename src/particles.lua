@@ -48,18 +48,18 @@ c_particle = {
 s_particle = c_particle:new({
   --should be able to add multiple sprites to this table
   sprites = nil,
+	flip = false,
+	fo = 0,
   draw = function(self)
-    spr(self.sprites[1].number, self.p.x, self.p.y, 1, 1, self.sprites.flip)
+		srand(time())
+		local time = flr(time() * 10 + self.fo) % #self.sprites + 1
+    spr(self.sprites[time], self.p.x, self.p.y, 1, 1, self.flip)
   end,
   new = function(self, o)
     local o = o or {}
     setmetatable(o, self)
     self.__index = self
-    sprites = {c_sprite:new({
-        number = 0,
-        hitbox = {o = vec2(0, 0), w = 8, h = 8}
-      })
-    }
+		sprites = {0}
     return o
   end
   })
@@ -134,6 +134,7 @@ c_strut = {
   draw = function(self)
     line(self.ends[1].p.x, self.ends[1].p.y, self.ends[2].p.x, self.ends[2].p.y, self.ends[1].c)
   end,
+	--This is never called directly. So I'm commenting it out for token-sake
   solve = function(self)
     --solve function is the same as earlier, only life gets reset
 		local send1 = self.ends[1]
@@ -153,7 +154,8 @@ c_strut = {
     self.ends[2].v = self.ends[2].v + (self.ends[2].f / self.ends[2].m * self.ends[2].dt) - (self.ends[2].v * self.ends[2].damp*self.ends[2].dt)
     self.ends[1].f = vec2(0, 0)
     self.ends[2].f = vec2(0, 0)--]]
-		sends1.lastpos = sends1.p
+
+		--[[sends1.lastpos = sends1.p
 		sends2.lastpos = sends2.p
 		sends1.p = sends1.p + (sends1.v * sends1.dt)
 		sends2.p = sends2.p + (sends2.v * sends2.dt)
@@ -167,7 +169,7 @@ c_strut = {
 		sends1.f = vec2(0, 0)
 		sends2.f = vec2(0, 0)
 		self.ends[1] = sends1
-		self.ends[2] = sends2
+		self.ends[2] = sends2--]]
   end,
   new = function(self, o)
     local o = o or {}
@@ -267,7 +269,7 @@ rope = {
     local offset = vec2(32, -20)
     for i = 1, 10, 1 do
       add(v, c_particle:new({
-        p = player.p - ((cam.pos + offset) * (i * 0.1)),
+        p = player.p - ((cam.pos + offset) * (i * 0.05)),
         v = cam.pos + vec2(32, -20),
         g = 9.8,
         damp = 1,

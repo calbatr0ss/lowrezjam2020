@@ -333,7 +333,7 @@ add(classes, c_chalk:new({}))
 
 -- Music manager
 c_jukebox = c_object:new({
-	songs = {0, 6, 8},
+	songs = {0, 6, 8, 26, 37},
 	currentsong = -1,
 	playing = true,
 	startplayingnow = function(self, songn, f, chmsk)
@@ -1031,13 +1031,72 @@ levels = {
 				}
 			}
 		}
-	}
+	},
+	{
+		name = "gap",
+		width = 2,
+		height = 3,
+		screens = {
+			--width
+				{
+					--height
+					dim = {
+						vec2(-1, -1),
+						vec2(14, 1),
+						vec2(14, 0)
+					},
+					bg = {
+						sprite = 19
+					}
+				},
+				{
+					dim = {
+						vec2(-1, -1),
+						vec2(15, 1),
+						vec2(14, 0)
+					},
+					bg = {
+						sprite = 19
+					}
+				}
+			}
+		},
+		{
+			name = "drop",
+			width = 2,
+			height = 3,
+			screens = {
+				--width
+					{
+						--height
+						dim = {
+							vec2(-1, -1),
+							vec2(14, 2),
+							vec2(14, 3)
+						},
+						bg = {
+							sprite = 19
+						}
+					},
+					{
+						dim = {
+							vec2(-1, -1),
+							vec2(15, 2),
+							vec2(15, 3)
+						},
+						bg = {
+							sprite = 19
+						}
+					}
+				}
+		}
 }
 level = nil
 draw_offset = 32*8
 
 function load_level(level_number)
 	reload_map()
+	jukebox:startplayingnow(level_number%2+3, 3000, 11)
 	level = levels[level_number]
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
@@ -1101,8 +1160,30 @@ function load_obj(w_pos, m_pos, class, tile)
 	end
 end
 
+function draw_leaves()
+	--draw the sides of the level
+	for y = 0, level.height - 1 do
+		for i = 0, 7 do
+			yo = y*64+i*8+draw_offset
+			spr(72, level.width * 64 - 8, yo, 1, 1, false, flr(rnd(2))==1)
+			spr(72, 0, yo, 1, 1, true, flr(rnd(2))==1)
+		end
+	end
+	print(stat(1), player.p.x, player.p.y - 10, 7)
+end
+
 function draw_level()
 	clip(cam.x, cam.y, 64, 64)
+	-- Draw the background leaves based on camera position
+	for x = 0, 8, 1 do
+		for y = 0, 8, 1 do
+			local camo = vec2(cam.pos.x %8 + 8, cam.pos.y %8 + 8)
+			srand((cam.pos.x - camo.x + x * 8) + cam.pos.y - camo.y + y * 8)
+			spr(73, cam.pos.x - camo.x + x * 8 + 8, cam.pos.y - camo.y + y * 8 + 8, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
+		end
+	end
+
+	--draw the elements in the level
 	srand(800)
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
@@ -1113,6 +1194,7 @@ function draw_level()
 				for sy = 0, 7 do
 					local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
 					spr(bg.sprite, world_pos.x, world_pos.y, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
+					spr(27, world_pos.x, world_pos.y + level.height * 64, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
 				end
 			end
 			-- ignore screens set to tombstone vector vec2(-1, -1)
@@ -1154,8 +1236,10 @@ function update_game()
 	if (not player.dead) then
 		player:move()
 	else
-		rspwn = cocreate(respawn)
-		add(coroutines, rspwn)
+		if rspwn == nil or costatus(rspwn) == "dead" then
+			rspwn = cocreate(respawn)
+			add(coroutines, rspwn)
+		end
 	end
 	resumecoroutines()
 	cam:update(player.p)
@@ -1167,12 +1251,12 @@ function draw_game()
 	-- testanimation()
 
 	draw_level(levelselection)
-
 	foreach(actors, function(a) a:draw() end)
-
 	toprope:drawrope()
 	player:draw()
+	draw_leaves()
 	drawparticles()
+	--drawtrees()
 	cam:update(player.p)
 	hud:draw()
 	print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
@@ -1182,8 +1266,6 @@ end
 function init_game()
 	_update = update_game
 	_draw = draw_game
-
-	gl = goal:new({p = vec2(32, 32)})
 
 	load_level(levelselection)
 
@@ -1195,11 +1277,16 @@ function init_game()
 		parts = cocreate(solveparticles)
 		add(coroutines, parts)
 	end
+	if flock == nil then
+		flock = cocreate(spawnflock)
+		add(coroutines, flock)
+	end
 	menuitem(1, "back to menu", init_menu)
-	jukebox:startplayingnow(3, 2000, 11)
+	--jukebox:startplayingnow(3, 2000, 11)
 end
 
 function respawn()
+	player.v = vec2(0, 0)
 	local respawntimer = time() + 1
 	while time() < respawntimer and player.dead do
 		yield()
@@ -1210,9 +1297,9 @@ function respawn()
 	for i = 1, 10, 1 do
 		local o = player.p + vec2(sin(10/i) * 10 - 4, cos(10/i) * 10 - 4)
 		local p = c_particle:new({p = player.p + vec2(sin(10/i) * 15, cos(10/i) * 15), v = (player.p-o)*5, life = 10, c = 14})
-		--p.pastpos = p.p
 		add(particles, p)
 	end
+	sfx(12, 3)
 end
 
 c_hud = c_object:new({
@@ -1295,3 +1382,26 @@ goal = c_object:new({
 		spr(self.sprites.default.number, self.p.x, self.p.y)
 	end
 })
+
+function drawtrees()
+	srand(time())
+	sspr(80, 32, 16, 16, player.p.x, player.p.y, flr(rnd(10)) + 16, flr(rnd(10)) + 16)
+end
+
+function spawnflock()
+	while true do
+		srand(time())
+		-- Every ten seconds, there's a 10 percent chance of spawning a flock
+		if time() % 10 == 1 and flr(rnd(10)) == 1 then
+			for i=-3, 3 do
+				add(particles, s_particle:new({fo = flr(rnd(4)),
+				sprites = {45, 46, 47},
+				life = 500,
+				p = vec2(level.width*64 + 64 +(rnd(5)-10),
+				level.height * 110+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
+				v = vec2(-50, 0)}))
+			end
+		end
+		yield()
+	end
+end

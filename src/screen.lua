@@ -34,7 +34,9 @@ function draw_screen()
 	drawnoodles(23)
 	spr(c_player.sprites.default.number, 2*8, 7*8, 1, 1)
 	if screen == "title" then
-		print("yolo solo", 15, 20, 1)
+		--print("yolo solo", 15, 20, 1)
+		spr(96, 10, 5, 4, 2)
+		spr(100, 20, 20, 4, 2)
 		print("press ❎/🅾️", 11, 44, 1)
 		jukebox:startplayingnow(1, 2000, 9)
 	end
