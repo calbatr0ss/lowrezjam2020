@@ -385,7 +385,6 @@ c_player = c_entity:new({
 	sprites = {
 		default = {
 			number = 1,
-			--hitbox={ ox = 0, oy = 0, w = 8, h = 8 }
 			hitbox={ o = vec2(0, 0), w = 8, h = 8 }
 		}
 	},
@@ -429,7 +428,7 @@ c_player = c_entity:new({
 			if btn(input.u) then
 				-- self.v.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
 				new_vel.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
-				printh(self.v.y..","..new_vel.y)
+				-- printh(self.v.y..","..new_vel.y)
 			elseif btn(input.d) then
 				new_vel.y = mid(-self.hold_topspd, self.v.y + self.hold_spd, self.hold_topspd)
 			else -- decay
@@ -550,244 +549,244 @@ c_player = c_entity:new({
 		setmetatable(o, self)
 		self.__index = self
 		o.statemachine = c_state:new({
-		name = "states",
-		states = {
-			default = {
-				name = "default",
-				rules = {
-					function(p)
-						if abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
+			name = "states",
+			states = {
+				default = {
+					name = "default",
+					rules = {
+						function(p)
+							if abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
+								return "walk"
+							end
+						end,
+						function(p)
+							if p.v.y > 0 and p.grounded == false then
+								return "falling"
+							end
+						end,
+						function(p)
+							if (p.v.y < 0) return "jumping"
+						end
+					}
+				},
+				walk = {
+					name = "walk",
+					rules = {
+						function(p)
+							if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
+							if p.holding then
+								sfx(6, -2)
+								sfx(6, -1, 0, 7)
+								return "hold"
+							end
+							if (p.v.y < 0 and p.grounded) return "jumping"
+							if (p.v.y > 0.01) return "falling"
 							return "walk"
 						end
-					end,
-					function(p)
-						if p.v.y > 0 and p.grounded == false then
-							return "falling"
+					}
+				},
+				--[[
+				walk = {
+					name = "walk",
+					rules = {
+						function(p)
+							if abs(p.v.x) <= 0.01 and p.holding == false then
+								return "default"
+							end
+						end,
+						function(p)
+							if abs(p.v.x) <= 0.01 and p.holding == true then
+								sfx(6, -2)
+								sfx(6, -1, 0, 7)
+								return "hold"
+							end
+						end,
+						function(p)
+							if p.v.y < 0 and p.grounded then
+								return "jumping"
+							end
 						end
-					end,
-					function(p)
-						if (p.v.y < 0) return "jumping"
-					end
-				}
-			},
-			walk = {
-				name = "walk",
-				rules = {
-					function(p)
-						if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
-						if p.holding then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
-							 return "hold"
-						 end
-						if (p.v.y < 0 and p.grounded) return "jumping"
-						if (p.v.y > 0.01) return "falling"
-						return "walk"
-					end
-				}
-			},
-			--[[
-			walk = {
-				name = "walk",
-				rules = {
-					function(p)
-						if abs(p.v.x) <= 0.01 and p.holding == false then
-							return "default"
+					}
+				},--]]
+				jumping = {
+					name = "jumping",
+					rules = {
+						function(p)
+							if (p.holding) then
+								sfx(6, -2)
+								sfx(6, -1, 0, 7)
+								return "hold"
+							end
+							if(p.v.y == 0) return "default"
+							if (p.v.y > 0) return "falling"
 						end
-					end,
-					function(p)
-						if abs(p.v.x) <= 0.01 and p.holding == true then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
+					}
+				},
+				--[[jumping = {
+					name = "jumping",
+					rules = {
+						function(p)
+							if (p.v.y > 0) then
+								return "falling"
+							end
+						end,
+						function(p)
+							if (p.holding) then
+								sfx(6, -2)
+								sfx(6, -1, 0, 7)
+								return "hold"
+							end
+						end
+					}
+				},--]]
+				hold = {
+					name = "hold",
+					rules = {
+						function(p)
+							if (p.v.y < 0 and p.holding == false) return "falling"
+							if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
+							if (abs(p.v.x) >= 0.01 and p.holding == true) return "shimmyx"
+							if (abs(p.v.y) >= 0.01 and p.holding == true) return "shimmyy"
+							if (not p.holding) return "default"
 							return "hold"
 						end
-					end,
-					function(p)
-						if p.v.y < 0 and p.grounded then
-							return "jumping"
+					}
+				},
+						--[[function(p)
+							if p.v.y < 0 and p.holding == false then
+								return "falling"
+							end
+						end,
+						function(p)
+							if abs(p.v.x) <= 0.01 and p.holding == false then
+								return "default"
+							end
+						end,
+						function(p)
+							if p.v.x >= 0.01 and p.holding == true then
+								return "shimmyy"
+							end
+							if p.v.y <= -0.01 and p.holding == true then
+								return "shimmyx"
+							end
+						end,
+						function(p)
+							if (not p.holding) return "default"
 						end
-					end
-				}
-			},--]]
-			jumping = {
-				name = "jumping",
-				rules = {
-					function(p)
-						if (p.holding) then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
-							return "hold"
+					}--]]
+				--[[
+				shimmyx = {
+					name = "shimmyx",
+					rules = {
+						function(p)
+							if abs(p.v.x) < 0.01 and p.holding == true then
+								--sfx(6, -2)
+								--sfx(6, -1, 0, 7)
+								return "hold"
+							end
+						end,
+						function(p)
+							if (not p.holding) return "default"
+						end,
+						function(p)
+							if (not p.holding) and p.v.y < 0.0 then
+								return "falling"
+							end
 						end
-						if(p.v.y == 0) return "default"
-						if (p.v.y > 0) return "falling"
-					end
-				}
-			},
-			--[[jumping = {
-				name = "jumping",
-				rules = {
-					function(p)
-						if (p.v.y > 0) then
-							return "falling"
-						end
-					end,
-					function(p)
-						if (p.holding) then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
-							return "hold"
-						end
-					end
-				}
-			},--]]
-			hold = {
-				name = "hold",
-				rules = {
-					function(p)
-						if (p.v.y < 0 and p.holding == false) return "falling"
-						if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
-						if (abs(p.v.x) >= 0.01 and p.holding == true) return "shimmyx"
-						if (abs(p.v.y) >= 0.01 and p.holding == true) return "shimmyy"
-						if (not p.holding) return "default"
-						return "hold"
-					end
-				}
-			},
-					--[[function(p)
-						if p.v.y < 0 and p.holding == false then
-							return "falling"
-						end
-					end,
-					function(p)
-						if abs(p.v.x) <= 0.01 and p.holding == false then
-							return "default"
-						end
-					end,
-					function(p)
-						if p.v.x >= 0.01 and p.holding == true then
-							return "shimmyy"
-						end
-						if p.v.y <= -0.01 and p.holding == true then
+					}--]]
+				shimmyx = {
+					name = "shimmyx",
+					rules = {
+						function(p)
+							if (abs(p.v.x) < 0.01 and p.holding) return "hold"
+							if (not p.holding) return "default"
+							if (not p.holding and p.v.y < 0.0) return "falling"
 							return "shimmyx"
 						end
-					end,
-					function(p)
-						if (not p.holding) return "default"
-					end
-				}--]]
-			--[[
-			shimmyx = {
-				name = "shimmyx",
-				rules = {
-					function(p)
-						if abs(p.v.x) < 0.01 and p.holding == true then
-							--sfx(6, -2)
-							--sfx(6, -1, 0, 7)
-							return "hold"
-						end
-					end,
-					function(p)
-						if (not p.holding) return "default"
-					end,
-					function(p)
-						if (not p.holding) and p.v.y < 0.0 then
-							return "falling"
-						end
-					end
-				}--]]
-			shimmyx = {
-				name = "shimmyx",
-				rules = {
-					function(p)
-						if (abs(p.v.x) < 0.01 and p.holding) return "hold"
-						if (not p.holding) return "default"
-						if (not p.holding and p.v.y < 0.0) return "falling"
-						return "shimmyx"
-					end
-				}
-			},
-			--[[shimmyy = {
-				name = "shimmyy",
-				rules = {
-					function(p)
-						if abs(p.v.y) < 0.01 and p.holding == true then
-							--sfx(6, -2)
-							--sfx(6, -1, 0, 7)
-							return "hold"
-						end
-					end,
-					function(p)
-						if (not p.holding) return "default"
-					end,
-					function(p)
-						if not p.holding and p.v.y < 0.0 then
-							return "falling"
-						end
-					end
-				}
-			},--]]
-			shimmyy = {
-				name = "shimmyy",
-				rules = {
-					function(p)
-						if (abs(p.v.y) < 0.01 and p.holding) return "hold"
-						if (not p.holding) return "default"
-						if (not p.holding and p.v.y < 0.0) return "falling"
-						return "shimmyy"
-					end
-				}
-			},
-			falling = {
-				name = "falling",
-				rules = {
-					function(p)
-						if (p.grounded) and p.v.y <= 4.5 then
-							local particle2 = smokepuff:new({
-								p = player.p,
-								v = vec2(-2, 0),
-								dt = 1
-							})
-							local particle = smokepuff:new({
-								p = player.p,
-								v = vec2(2, 0),
-								dt = 1
-							})
-							sfx(1, -1, 0, 18)
-							add(particles, particle)
-							add(particles, particle2)
-							return "default"
-						elseif (p.grounded) and p.v.y >= 4.5 then
-							for i = 1, 15, 1 do
-								add(particles, c_particle:new({
-									p = player.p + vec2(4, 8),
-									v = vec2(rnd(32)-16,
-									rnd(16)-16),
-									c = 14,
-									life = flr(rnd(15)),
-									damp = rnd(0.5),
-									g = 9.8,
-									dt = 0.25
-								}))
-								sfx(9)
+					}
+				},
+				--[[shimmyy = {
+					name = "shimmyy",
+					rules = {
+						function(p)
+							if abs(p.v.y) < 0.01 and p.holding == true then
+								--sfx(6, -2)
+								--sfx(6, -1, 0, 7)
+								return "hold"
 							end
-							player:die()
-							return "dead"
+						end,
+						function(p)
+							if (not p.holding) return "default"
+						end,
+						function(p)
+							if not p.holding and p.v.y < 0.0 then
+								return "falling"
+							end
 						end
-					end,
-					function(p)
-						if (p.holding) then
-							sfx(6, -2)
-							sfx(6, -1, 0, 7)
-							return "hold"
+					}
+				},--]]
+				shimmyy = {
+					name = "shimmyy",
+					rules = {
+						function(p)
+							if (abs(p.v.y) < 0.01 and p.holding) return "hold"
+							if (not p.holding) return "default"
+							if (not p.holding and p.v.y < 0.0) return "falling"
+							return "shimmyy"
 						end
-					end,
-					function(p)
-						if (p.v.y < 0) then
-								add(particles, airjump:new({p = player.p, v = player.v * -10}))
-								--spr(16, player.p.x + 4, player.p.y + 10)
-							 return "jumping"
+					}
+				},
+				falling = {
+					name = "falling",
+					rules = {
+						function(p)
+							if (p.grounded) and p.v.y <= 4.5 then
+								local particle2 = smokepuff:new({
+									p = player.p,
+									v = vec2(-2, 0),
+									dt = 1
+								})
+								local particle = smokepuff:new({
+									p = player.p,
+									v = vec2(2, 0),
+									dt = 1
+								})
+								sfx(1, -1, 0, 18)
+								add(particles, particle)
+								add(particles, particle2)
+								return "default"
+							elseif (p.grounded) and p.v.y >= 4.5 then
+								for i = 1, 15, 1 do
+									add(particles, c_particle:new({
+										p = player.p + vec2(4, 8),
+										v = vec2(rnd(32)-16,
+										rnd(16)-16),
+										c = 14,
+										life = flr(rnd(15)),
+										damp = rnd(0.5),
+										g = 9.8,
+										dt = 0.25
+									}))
+									sfx(9)
+								end
+								player:die()
+								return "dead"
+							end
+						end,
+						function(p)
+							if (p.holding) then
+								sfx(6, -2)
+								sfx(6, -1, 0, 7)
+								return "hold"
+							end
+						end,
+						function(p)
+							if (p.v.y < 0) then
+									add(particles, airjump:new({p = player.p, v = player.v * -10}))
+									--spr(16, player.p.x + 4, player.p.y + 10)
+								return "jumping"
+							end
 						end
-					end
 					}
 				},
 				dead = {
@@ -1169,7 +1168,6 @@ function draw_leaves()
 			spr(72, 0, yo, 1, 1, true, flr(rnd(2))==1)
 		end
 	end
-	print(stat(1), player.p.x, player.p.y - 10, 7)
 end
 
 function draw_level()
@@ -1227,7 +1225,6 @@ end
 function update_game()
 	player.on_hold = false -- reset player hold to check again on next loop
 	player.on_chalkhold = false
-	-- fixme: use sprite flags for collisions!
 	player.on_hold = player:hold_collide()
 	foreach(actors, function(a)
 		-- a:move()
@@ -1242,7 +1239,6 @@ function update_game()
 		end
 	end
 	resumecoroutines()
-	cam:update(player.p)
 end
 
 function draw_game()
@@ -1260,7 +1256,6 @@ function draw_game()
 	cam:update(player.p)
 	hud:draw()
 	print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
-	gl:draw()
 end
 
 function init_game()
@@ -1292,6 +1287,7 @@ function respawn()
 		yield()
 	end
 	player.dead = false
+	player.sprites.default.number = 1
 	clear_state()
 	init_game()
 	for i = 1, 10, 1 do

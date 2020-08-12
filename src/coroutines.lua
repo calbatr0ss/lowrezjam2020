@@ -9,10 +9,10 @@ end
 
 function resumecoroutines()
 	for c in all(coroutines) do
-    if c and costatus(c) != 'dead' then
-      assert(coresume(c))
+	if c and costatus(c) != 'dead' then
+		assert(coresume(c))
     else
-      del(coroutines, c)
+		del(coroutines, c)
     end
   end
 end
