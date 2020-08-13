@@ -290,14 +290,13 @@ c_chalkhold = c_object:new({
 			self.anims.drip.playing = true
 			self.anims.drip:loopforward()
 			frame = self.anims.drip.frames[self.anims.drip.currentframe]
-			self.sprites.default.number = frame
-			spr(self.sprite.number, self.p.x, self.p.y, 1, 1, self.flip)
+			--spr(self.sprite.number, self.p.x, self.p.y, 1, 1, self.flip)
 		elseif player.has_chalk then
-			self.sprites.default.number = 37
+			frame = 37
 		elseif not player.has_chalk then
-				self.sprites.default.number = 38
+			frame = 38
 		end
-		spr(self.sprite.number, self.p.x, self.p.y, 1, 1, self.flip)
+		spr(frame, self.p.x, self.p.y, 1, 1, self.flip)
 	end,
 	draw = function(self)
 		self:anim()
@@ -923,8 +922,8 @@ c_hud = c_object:new({
 	draw = function(self)
 		corneroffset = cam.pos + self.baro
 		rectfill(
-			corner.offset.x,
-			corner.offset.y,
+			corneroffset.x,
+			corneroffset.y,
 			cam.pos.x + 26 + self.baro.x,
 			cam.pos.y + 2 + self.baro.y,
 			1
@@ -941,7 +940,7 @@ c_hud = c_object:new({
 			line(
 				cam.pos.x + 1 + self.baro.x,
 				flr(cam.pos.y + 1 + self.baro.y),
-				cam.pos.x + mid(1, (player.stamina / 4), 25) + self.baro.x,
+				cam.pos.x + mid(1, flr(player.stamina / 4), 25) + self.baro.x,
 				cam.pos.y + 1 + self.baro.y,
 				11
 			)
@@ -952,6 +951,7 @@ c_hud = c_object:new({
 		else
 			spr(49, cam.pos.x + 55 + self.hando.x, cam.pos.y + self.hando.y)
 		end
+		if (player.has_chalk) spr(58, cam.pos.x + 55, cam.pos.y+55)
 	end,
 	shakehand = function(self)
 		self.hando = vec2(0, 0)
@@ -1064,7 +1064,7 @@ levels = {
 		name = "drop",
 		width = 2,
 		height = 3,
-		next = nil,
+		next = 5,
 		screens = {
 			--width
 			{
@@ -1086,6 +1086,92 @@ levels = {
 				},
 				bg = {
 					sprite = 19
+				}
+			}
+		}
+	},
+	-- level 5
+	{
+		name = "chalk",
+		width = 2,
+		height = 2,
+		next = 6,
+		screens = {
+			{
+				dim = {
+					vec2(-1, -1),
+					vec2(13, 0)
+				},
+				bg = {
+					sprite = 20
+				}
+			},
+			{
+				dim = {
+					vec2(-1, -1),
+					vec2(15, 0)
+				},
+				bg = {
+					sprite = 20
+				}
+			}
+		}
+	},
+	--Level 6
+	{
+		name = "climbers",
+		width = 2,
+		height = 3,
+		next = 7,
+		screens = {
+			--Width
+			{
+				--Height
+				dim = {
+					vec2(-1, -1),
+					vec2(12, 1),
+					vec2(12, 2)
+				},
+				bg = {
+					sprite = 21
+				}
+			},
+			{
+				dim = {
+					vec2(-1, -1),
+					vec2(13, 1),
+					vec2(13, 2)
+				},
+				bg = {
+					sprite = 21
+				}
+			}
+		}
+	},
+	{
+		name = "cracks",
+		width = 2,
+		height = 3,
+		next = 1,
+		screens = {
+			{
+				dim = {
+					vec2(-1, -1),
+					vec2(12, 0),
+					vec2(12, 3)
+				},
+				bg = {
+					sprite = 18
+				}
+			},
+			{
+				dim = {
+					vec2(-1, -1),
+					vec2(-1, -1),
+					vec2(13, 3)
+				},
+				bg = {
+					sprite = 18
 				}
 			}
 		}
@@ -1266,7 +1352,7 @@ function draw_game()
 	--drawtrees()
 	cam:update(player.p)
 	hud:draw()
-	print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
+	--print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
 end
 
 function init_game()
@@ -1307,66 +1393,6 @@ function respawn()
 	end
 	sfx(12, 3)
 end
-
-c_hud = c_object:new({
-	name = "hud",
-	baro = vec2(0, 0),
-	hando = vec2(0, 0),
-	draw = function(self)
-		self.p.x = flr(self.p.x)
-		self.p.y = flr(self.p.y)
-		rectfill(
-			cam.pos.x + self.baro.x,
-			cam.pos.y + self.baro.y,
-			cam.pos.x + 26 + self.baro.x,
-			cam.pos.y + 2 + self.baro.y,
-			1
-		)
-		line(
-			cam.pos.x + 1 + self.baro.x,
-			cam.pos.y + 1 + self.baro.y,
-			cam.pos.x + 25 + self.baro.x,
-			cam.pos.y + 1 + self.baro.y,
-			8
-		)
-		if player.stamina > 0 then
-			line(
-				cam.pos.x + 1 + self.baro.x,
-				cam.pos.y + 1 + self.baro.y,
-				cam.pos.x + mid(1, (player.stamina / 4), 25) + self.baro.x,
-				cam.pos.y + 1 + self.baro.y,
-				11
-			)
-		end
-		if player.holding then
-			spr(50, cam.pos.x + 55 + self.hando.x, cam.pos.y + self.hando.y)
-		else
-			spr(49, cam.pos.x + 55 + self.hando.x, cam.pos.y + self.hando.y)
-		end
-		if (player.has_chalk) spr(58, cam.pos.x + 49, cam.pos.y)
-	end,
-	shakehand = function(self)
-		self.hando = vec2(0, 0)
-		--Should check if there is already a coroutine running , and either delete it
-		--or resume it. This prevents a crash in the event you spam the button too much.
-		--Fix this post jam
-		sfx(8, -2)
-		sfx(8, -1, 0, 12)
-		shakeh = cocreate(sinxshake)
-		coresume(shakeh, self.hando, 2, 2, 10)
-		add(coroutines, shakeh)
-	end,
-	shakebar = function(self)
-		self.baro = vec2(0, 0)
-		--See note above
-		sfx(7, -2)
-		sfx(7, -1, 0, 12)
-		shakeb = cocreate(sinxshake)
-		coresume(shakeb, self.baro, 2, 2, 10)
-		add(coroutines, shakeb)
-	end
-})
-add(classes, c_hud:new({}))
 
 c_goal = c_object:new({
 	name = "goal",
