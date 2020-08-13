@@ -18,6 +18,7 @@ particles = {}
 coroutines = {}
 start_time = 0
 end_time = 0
+musicoff = false
 
 --vector functions (turns out order matters)
 function vec2(x, y)
@@ -317,7 +318,7 @@ add(classes, c_chalk:new({}))
 
 -- Music manager
 c_jukebox = c_object:new({
-	songs = {0, 6, 8, 26, 37},
+	songs = {0, 6, 8, 26, 38},
 	currentsong = -1,
 	playing = true,
 	startplayingnow = function(self, songn, f, chmsk)
@@ -373,6 +374,7 @@ c_player = c_entity:new({
 		}
 	},
 	anims = nil,
+	movable = true,
 	statemachine = nil,
 	name = "player",
 	spd = 0.5,
@@ -816,7 +818,11 @@ c_player = c_entity:new({
 		return o
 	end,
 	move = function(self)
-		self:input()
+		if (self.movable) then
+			self:input()
+		else
+			self.v = vec2(0, 0)
+		end
 		-- stamina
 		if self.stamina < self.max_stamina then
 			self.stamina_regen_cor = cocreate(self.regen_stamina)
@@ -865,7 +871,12 @@ c_player = c_entity:new({
 					self.chalkhold = actor
 				end
 			elseif actor.name == "goal" then
-				actor:next_level()
+				if nextlvl == nil or costatus(nextlvl) == 'dead' then
+					nextlvl = cocreate(actor.next_level)
+					coresume(nextlvl, actor)
+					add(coroutines, nextlvl)
+				end
+				--actor:next_level()
 			end
 		end
 	end,
@@ -1238,6 +1249,7 @@ function load_obj(w_pos, m_pos, class, tile)
 		elseif class.name == "chalkhold" then
 			-- todo: fix chalkholds?
 			add(actors, class:new({p = w_pos}))
+			mset(m_pos.x, m_pos.y, 0)
 		elseif class.name == "player" then
 			player = class:new({p = w_pos})
 			mset(m_pos.x, m_pos.y, 0)
@@ -1362,6 +1374,7 @@ function init_game()
 	load_level(levelselection)
 
 	player.statemachine.parent = player
+	player.movable = true
 	hud = c_hud:new({})
 	toprope = rope:create()
 	-- this if statement prevents a bug when resuming after returning to menu
@@ -1373,7 +1386,8 @@ function init_game()
 		flock = cocreate(spawnflock)
 		add(coroutines, flock)
 	end
-	menuitem(1, "back to menu", init_menu)
+	menuitem(2, "back to menu", init_menu)
+	menuitem(1, "reload level", respawn)
 	--jukebox:startplayingnow(3, 2000, 11)
 end
 
@@ -1412,6 +1426,14 @@ c_goal = c_object:new({
 	},
 	next_level = function(self)
 		-- todo: add coroutine for an end of level anim
+		local reloadtime = time() + 5
+		jukebox.playing = true
+		jukebox:startplayingnow(5)
+		player.movable = false
+		while time() < reloadtime do
+			yield()
+		end
+		if (musicoff) jukebox:stopplaying()
 		if not level.next then
 			-- todo: no next level selected... beat the game?
 		end
