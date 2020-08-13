@@ -9,26 +9,15 @@
 	-- 3: crimp
 	-- 4: crack
 
-coroutines = {}
 player = nil
 g_force = 0.2
-display = 64
 input= { l = 0, r = 1, u = 2, d = 3, o = 4, x = 5 }
 classes = {}
 actors = {}
+particles = {}
+coroutines = {}
 start_time = 0
 end_time = 0
-
--- particles
-particles = {}
-
---[[
-function clamp(v, a, b)
-	if (v > b) v = b
-	if (v < a) v = a
-	return v
-end
---]]
 
 --vector functions (turns out order matters)
 function vec2(x, y)
@@ -109,10 +98,6 @@ cam = {
 	pos = vec2(0, 0-1280),
 	lerp = 0.15,
 	update = function(self, track_pos)
-		-- direct follow
-		-- cam.pos.x = track_pos.x - (display / 2) + 4
-		-- cam.pos.y = track_pos.y - ((display / 3) * 2) + 4
-
 		-- lerp follow
 		local half = 28
 		local third = 39
@@ -512,9 +497,9 @@ c_player = c_entity:new({
 				if self.on_hold then
 					if self.holding == false then
 						-- first grabbed, stick position and reset jump
+						-- printh("GRABBED")
 						self.holding_pos = vec2(self.p.x, self.p.y)
 						self.was_holding = true
-						-- printh("GRABBED")
 						self.v = vec2(0, 0)
 						self.num_jumps = 0
 					end
@@ -852,31 +837,23 @@ c_player = c_entity:new({
 				sfx(2, -1, 0, 9)
 				actor:die()
 				del(actors, actor)
-			end
-		end
-		if c_entity.collide(self, actor) then
-			if actor.name == "chalk" then
+			elseif actor.name == "chalk" then
 				self.has_chalk = true
 				sfx(4, -1, 0, 10)
 				actor:die()
 				del(actors, actor)
-			end
-		end
-		if c_entity.collide(self, actor) then
-			if actor.name == "chalkhold" then
+			elseif actor.name == "chalkhold" then
 				if actor.activated then
 					self.on_hold = true
 				elseif not actor.activated then
 					self.on_chalkhold = true
 					self.chalkhold = actor
 				end
+			elseif actor.name == "goal" then
+				actor:next_level()
 			end
 		end
 	end,
---[[	die = function(self)
-		sfx(0)
-		self.dead = true
-	end,--]]
 	anim = function(self)
 		--self:determinestate()
 		local frame = 1
@@ -985,9 +962,11 @@ add(classes, c_hud:new({}))
 
 levels = {
 	{
+		-- level 1
 		name = "test",
 		width = 2,
 		height = 3,
+		next = 2,
 		screens = {
 			--width
 			{
@@ -1014,9 +993,11 @@ levels = {
 		}
 	},
 	{
+		-- level 2
 		name = "approach",
 		width = 1,
 		height = 2,
+		next = 3,
 		screens = {
 			--width
 			{
@@ -1032,63 +1013,67 @@ levels = {
 		}
 	},
 	{
+		-- level 3
 		name = "gap",
 		width = 2,
 		height = 3,
+		next = 4,
 		screens = {
 			--width
-				{
-					--height
-					dim = {
-						vec2(-1, -1),
-						vec2(14, 1),
-						vec2(14, 0)
-					},
-					bg = {
-						sprite = 19
-					}
+			{
+				--height
+				dim = {
+					vec2(-1, -1),
+					vec2(14, 1),
+					vec2(14, 0)
 				},
-				{
-					dim = {
-						vec2(-1, -1),
-						vec2(15, 1),
-						vec2(14, 0)
-					},
-					bg = {
-						sprite = 19
-					}
+				bg = {
+					sprite = 19
+				}
+			},
+			{
+				dim = {
+					vec2(-1, -1),
+					vec2(15, 1),
+					vec2(14, 0)
+				},
+				bg = {
+					sprite = 19
 				}
 			}
-		},
-		{
-			name = "drop",
-			width = 2,
-			height = 3,
-			screens = {
-				--width
-					{
-						--height
-						dim = {
-							vec2(-1, -1),
-							vec2(14, 2),
-							vec2(14, 3)
-						},
-						bg = {
-							sprite = 19
-						}
-					},
-					{
-						dim = {
-							vec2(-1, -1),
-							vec2(15, 2),
-							vec2(15, 3)
-						},
-						bg = {
-							sprite = 19
-						}
-					}
-				}
 		}
+	},
+	{
+		-- level 4
+		name = "drop",
+		width = 2,
+		height = 3,
+		next = nil,
+		screens = {
+			--width
+			{
+				--height
+				dim = {
+					vec2(-1, -1),
+					vec2(14, 2),
+					vec2(14, 3)
+				},
+				bg = {
+					sprite = 19
+				}
+			},
+			{
+				dim = {
+					vec2(-1, -1),
+					vec2(15, 2),
+					vec2(15, 3)
+				},
+				bg = {
+					sprite = 19
+				}
+			}
+		}
+	}
 }
 level = nil
 draw_offset = 32*8
@@ -1135,6 +1120,9 @@ end
 function clear_state()
 	actors = {}
 	particles = {}
+	if player then -- workaround for referential sprites table
+		player.sprites.default.number = 1
+	end
 	player = nil
 end
 
@@ -1142,19 +1130,18 @@ function load_obj(w_pos, m_pos, class, tile)
 	local sprite = class.sprites.default.number
 	if sprite == tile then
 		if class.name == "granola" then
-			printh("added granola")
-			add(actors, class:new({p = vec2(w_pos.x, w_pos.y), map_pos = m_pos}))
+			add(actors, class:new({p = w_pos, map_pos = m_pos}))
 		elseif class.name == "chalk" then
-			printh("added chalk")
-			add(actors, class:new({p = vec2(w_pos.x, w_pos.y), map_pos = m_pos}))
+			add(actors, class:new({p = w_pos, map_pos = m_pos}))
 		elseif class.name == "chalkhold" then
 			-- todo: fix chalkholds?
-			add(actors, class:new({p = vec2(w_pos.x*8, w_pos.y*8)}))
+			add(actors, class:new({p = w_pos}))
 		elseif class.name == "player" then
 			player = class:new({p = w_pos})
 			mset(m_pos.x, m_pos.y, 0)
 		elseif class.name == "goal" then
-			-- todo: make a goal
+			add(actors, class:new({p = w_pos}))
+			mset(m_pos.x, m_pos.y, 0)
 		end
 	end
 end
@@ -1245,7 +1232,6 @@ function draw_game()
 	cls()
 	--testtiles()
 	-- testanimation()
-
 	draw_level(levelselection)
 	foreach(actors, function(a) a:draw() end)
 	toprope:drawrope()
@@ -1287,7 +1273,6 @@ function respawn()
 		yield()
 	end
 	player.dead = false
-	player.sprites.default.number = 1
 	clear_state()
 	init_game()
 	for i = 1, 10, 1 do
@@ -1299,6 +1284,7 @@ function respawn()
 end
 
 c_hud = c_object:new({
+	name = "hud",
 	baro = vec2(0, 0),
 	hando = vec2(0, 0),
 	draw = function(self)
@@ -1357,7 +1343,8 @@ c_hud = c_object:new({
 })
 add(classes, c_hud:new({}))
 
-goal = c_object:new({
+c_goal = c_object:new({
+	name = "goal",
 	sprites = {
 		default = {
 			number = 60,
@@ -1372,12 +1359,22 @@ goal = c_object:new({
 			playing = true
 		})
 	},
+	next_level = function(self)
+		-- todo: add coroutine for an end of level anim
+		if not level.next then
+			-- todo: no next level selected... beat the game?
+		end
+		clear_state()
+		levelselection = level.next
+		init_game()
+	end,
 	draw = function(self)
 		local frame = self.anims.wave:loopforward()
-		self.sprites.default.number = self.anims.wave.frames[frame]
-		spr(self.sprites.default.number, self.p.x, self.p.y)
+		frame = self.anims.wave.frames[frame]
+		spr(frame, self.p.x, self.p.y)
 	end
 })
+add(classes, c_goal:new({}))
 
 function drawtrees()
 	srand(time())
