@@ -210,6 +210,10 @@ add(classes, c_anim:new({}))
 c_object = c_sprite:new({
 	name="object",
 	grounded = false,
+	pass_thru = false,
+	pass_thru_pressed_at = 0,
+	was_pass_thru_held = false,
+	pass_thru_time = 0.2,
 	hp = 1,
 	move = function(self)
 		self.p.y += self.v.y
@@ -217,6 +221,9 @@ c_object = c_sprite:new({
 		while floor_tile_collide(self) do self.p.y -= 1 end
 		-- if ceil_tile_collide(self) then self.p.y += 1 end
 		-- if floor_tile_collide(self) then self.p.y -= 1 end
+		if self.v.y >= 0 and not self.pass_thru and ledge_below(self) then
+			while floor_ledge_collide(self) do self.p.y -= 1 end
+		end
 
 		self.p.x += self.v.x
 		while right_tile_collide(self) do self.p.x -= 1 end
@@ -231,7 +238,7 @@ c_object = c_sprite:new({
 		if floor_tile_collide(self) then
 			self.p.y = flr(self.p.y) -- prevent visually stuck in ground
 		end
-		self.grounded = on_ground(self)
+		self.grounded = on_ground(self) or (on_ledge(self) and not self.pass_thru and self.v.y >= 0)
 		-- sprite orientation
 		if self.v.x > 0 then self.flip = false
 		elseif self.v.x < 0 then self.flip = true end
@@ -455,6 +462,16 @@ c_player = c_entity:new({
 				self.v.x *= 0.5
 				if abs(self.v.x) < 0.2 then self.v.x = 0 end
 			end
+			-- pass thru
+			if btn(input.d) then
+				if not self.was_pass_thru_pressed then
+					self.pass_thru_pressed_at = time()
+				end
+				self.was_pass_thru_pressed = true
+			else
+				self.was_pass_thru_pressed = false
+			end
+			self.pass_thru = time() - self.pass_thru_pressed_at > self.pass_thru_time and self.was_pass_thru_pressed
 		end
 
 		-- jump
