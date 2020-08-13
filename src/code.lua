@@ -390,7 +390,9 @@ c_player = c_entity:new({
 	jump_pressed = false,
 	jump_newly_pressed = false,
 	dead = false,
-	on_hold = false,
+	on_crack = false,
+	on_crimp = false,
+	on_jug = false,
 	holding_pos = vec2(0, 0),
 	last_held = 0,
 	was_holding = false,
@@ -399,6 +401,7 @@ c_player = c_entity:new({
 	hold_topspd = 0.75,
 	holding = false,
 	holding_cooldown = 0.3, -- 300ms
+	crimp_drain = 1,
 	on_chalkhold = false,
 	chalkhold = nil,
 	has_chalk = false,
@@ -406,6 +409,9 @@ c_player = c_entity:new({
 	max_stamina = 100,
 	stamina_regen_rate = 3,
 	stamina_regen_cor = nil,
+	add_stamina = function(self, amount)
+		self.stamina = mid(0, self.stamina + amount, self.max_stamina)
+	end,
 	input = function(self)
 		if self.dead then return end -- no zombies
 		if self.holding then
@@ -431,7 +437,7 @@ c_player = c_entity:new({
 
 			local new_pos = vec2(self.p.x+new_vel.x, self.p.y+new_vel.y)
 			-- printh(abs(vdist(new_pos, self.holding_pos)))
-			if abs(vdist(new_pos, self.holding_pos)) <= self.hold_wiggle then
+			if abs(vdist(new_pos, self.holding_pos)) <= self.hold_wiggle or self.on_crack then
 				self.v = new_vel
 			else
 				self.v.y *= 0.5
@@ -439,7 +445,6 @@ c_player = c_entity:new({
 				self.v.x *= 0.5
 				if abs(self.v.x) < 0.2 then self.v.x = 0 end
 			end
-
 		else
 			-- left/right movement
 			if btn(input.r) then
@@ -470,7 +475,8 @@ c_player = c_entity:new({
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
 		self.can_jump = self.num_jumps < self.max_jumps and
-			jump_window and self.stamina >= 0 and
+			jump_window and
+			self.stamina > 0 and
 			not self.holding and
 			self.jump_newly_pressed
 		if not jump_window then self.jumping = false end
@@ -481,23 +487,28 @@ c_player = c_entity:new({
 			self.jumping = true
 			self.v.y = 0 -- reset dy before using jump_force
 			self.v.y -= self.jump_force
-			self.stamina -= self.jump_cost
+			self:add_stamina(-self.jump_cost)
 			sfx(3, -1, 0, 14)
 		end
 
-		-- Shake the hud if you run out of stamina
+		-- shake the hud if you run out of stamina
 		if self.stamina <= 0 and btn(input.x) and self.jump_newly_pressed then
 			hud:shakebar()
 		end
 
+		-- drain stamina
+		if self.on_crimp and self.holding then
+			self:add_stamina(-self.crimp_drain)
+		end
+
 		-- hold
 		local can_hold_again = (time() - self.last_held) > self.holding_cooldown
+		local on_any_hold = self.on_jug or self.on_crimp or self.on_crack
 		if btn(input.o) then
 			if can_hold_again then
-				if self.on_hold then
+				if on_any_hold then
 					if self.holding == false then
 						-- first grabbed, stick position and reset jump
-						-- printh("GRABBED")
 						self.holding_pos = vec2(self.p.x, self.p.y)
 						self.was_holding = true
 						self.v = vec2(0, 0)
@@ -513,7 +524,7 @@ c_player = c_entity:new({
 		else
 			self.holding = false
 		end
-		if not self.on_hold then
+		if not on_any_hold then
 			self.holding = false
 		end
 		if self.was_holding and not self.holding then
@@ -524,7 +535,7 @@ c_player = c_entity:new({
 	regen_stamina = function(self)
 		while self.stamina < self.max_stamina do
 			if self.grounded then
-				self.stamina += self.stamina_regen_rate
+				self:add_stamina(self.stamina_regen_rate)
 			end
 			yield()
 		end
@@ -822,12 +833,17 @@ c_player = c_entity:new({
 	hold_collide = function(self)
 		for i = 0, 7 do
 			for j = 0, 7 do
-				if jug_tile(self.p.x+i, self.p.y+j) then
-					return true
+				local px = self.p.x+i
+				local py = self.p.y+j
+				if jug_tile(px, py) then
+					return "jug"
+				elseif crimp_tile(px, py) then
+					return "crimp"
+				elseif crack_tile(px, py) then
+					return "crack"
 				end
 			end
 		end
-		return false
 	end,
 	collide = function(self, actor)
 		if c_entity.collide(self, actor) then
@@ -844,7 +860,7 @@ c_player = c_entity:new({
 				del(actors, actor)
 			elseif actor.name == "chalkhold" then
 				if actor.activated then
-					self.on_hold = true
+					self.on_jug = true
 				elseif not actor.activated then
 					self.on_chalkhold = true
 					self.chalkhold = actor
@@ -1210,9 +1226,18 @@ function _init()
 end
 
 function update_game()
-	player.on_hold = false -- reset player hold to check again on next loop
 	player.on_chalkhold = false
-	player.on_hold = player:hold_collide()
+	local hold = player:hold_collide()
+	-- reset player holds to check again on next loop
+	player.on_jug, player.on_crack, player.on_crimp = false, false, false
+	-- player.on_jug = hold == "jug" -- this syntax saves tokens, but at what cost?
+	if hold == "jug" then
+		player.on_jug = true
+	elseif hold == "crack" then
+		player.on_crack = true
+	elseif hold == "crimp" then
+		player.on_crimp = true
+	end
 	foreach(actors, function(a)
 		-- a:move()
 		player:collide(a)

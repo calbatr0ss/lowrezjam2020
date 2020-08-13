@@ -69,14 +69,6 @@ function crack_tile(x, y)
 	return is_flag_at(x/8, y/8, 4)
 end
 
-function granola_tile(x, y)
-	return is_flag_at(x/8, y/8, 5)
-end
-
-function chalk_tile(x, y)
-	return is_flag_at(x/8, y/8, 5)
-end
-
 function is_flag_at(x, y, f)
 	return fget(mget(x, y), f)
 end
