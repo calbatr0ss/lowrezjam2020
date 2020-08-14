@@ -41,19 +41,20 @@ function ledge_below(obj)
 end
 
 function calc_edges(obj)
+	local x, y, hox, hoy, hw, hh = obj.p.x, obj.p.y, obj.sprite.hitbox.o.x, obj.sprite.hitbox.o.y, obj.sprite.hitbox.w, obj.sprite.hitbox.h
 	if obj.flip then
 		return {
-			r = obj.p.x+8-obj.sprite.hitbox.o.x-1, 
-			l = obj.p.x+8-obj.sprite.hitbox.o.x-obj.sprite.hitbox.w, 
-			t = obj.p.y+obj.sprite.hitbox.o.y, 
-			b = obj.p.y+obj.sprite.hitbox.o.y+obj.sprite.hitbox.h-1
+			r = x+8-hox-1, 
+			l = x+8-hox-hw, 
+			t = obj.p.y+hoy, 
+			b = obj.p.y+hoy+hh-1
 		}
 	else
 		return {
-			r = obj.p.x+obj.sprite.hitbox.o.x+obj.sprite.hitbox.w-1, 
-			l = obj.p.x+obj.sprite.hitbox.o.x, 
-			t = obj.p.y+obj.sprite.hitbox.o.y, 
-			b = obj.p.y+obj.sprite.hitbox.o.y+obj.sprite.hitbox.h-1
+			r = x+hox+hw-1, 
+			l = x+hox, 
+			t = y+hoy, 
+			b = y+hoy+hh-1
 		}
 	end
 end

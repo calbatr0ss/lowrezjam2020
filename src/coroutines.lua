@@ -12,11 +12,7 @@ function clearcoroutines()
 		del(coroutines, c)
 		c = nil
 	end
-	parts = nil
-	tran = nil
-	flock = nil
-	rspwn = nil
-	nextlvl = nil
+	parts, tran, flock, rspwn, nextlvl = nil, nil, nil, nil, nil
 end
 
 function resumecoroutines()

@@ -62,12 +62,14 @@ vec2_meta = {
 }
 
 -- classic multiplication between 2 vectors
+--[[
 function vmult(v1, v2)
 	local vec = vec2(0, 0)
 	vec.x = v1.x * v2.x
 	vec.y = v1.y * v2.y
 	return vec
 end
+--]]
 
 --outer product. will probably go unused in this project
 --[[
@@ -107,7 +109,7 @@ function vdist(v1, v2)
 end
 
 cam = {
-	-- todo use the offset here
+	-- todo: use the offset here
 	pos = vec2(0, 0-1280),
 	lerp = 0.15,
 	update = function(self, track_pos)
@@ -191,7 +193,6 @@ c_state = {
 	end
 }
 
-
 -- animation, inherites from sprite
 -- rewrite this in the future, post-jam
 c_anim = c_sprite:new({
@@ -232,7 +233,6 @@ c_object = c_sprite:new({
 	pass_thru_pressed_at = 0,
 	was_pass_thru_held = false,
 	pass_thru_time = 0.2,
-	hp = 1,
 	move = function(self)
 		local p = self.p
 		local v = self.v
@@ -266,14 +266,11 @@ c_object = c_sprite:new({
 		self.v = v
 	end,
 	collide = function(self, other)
-		local personal_space,their_space = calc_edges(self),calc_edges(other)
+		local personal_space, their_space = calc_edges(self), calc_edges(other)
 		return personal_space.b > their_space.t and
 			personal_space.t < their_space.b and
 			personal_space.r > their_space.l and
 			personal_space.l < their_space.r
-	end,
-	damage = function(self, n)
-		self.hp -= n
 	end
 })
 add(classes, c_object:new({}))
@@ -1229,8 +1226,8 @@ function draw_leaves()
 	for y = 0, level.height - 1 do
 		for i = 0, 7 do
 			yo = y*64+i*8+draw_offset
-			spr(72, level.width * 64 - 8, yo, 1, 1, false, flr(rnd(2))==1)
-			spr(72, 0, yo, 1, 1, true, flr(rnd(2))==1)
+			spr(72, level.width * 64 - 8, yo, 1, 1, false, rand_bool())
+			spr(72, 0, yo, 1, 1, true, rand_bool())
 		end
 	end
 end
@@ -1242,7 +1239,7 @@ function draw_level()
 		for y = 0, 8, 1 do
 			local camo = vec2(cam.pos.x %8 + 8, cam.pos.y %8 + 8)
 			srand((cam.pos.x - camo.x + x * 8) + cam.pos.y - camo.y + y * 8)
-			spr(73, cam.pos.x - camo.x + x * 8 + 8, cam.pos.y - camo.y + y * 8 + 8, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
+			spr(73, cam.pos.x - camo.x + x * 8 + 8, cam.pos.y - camo.y + y * 8 + 8, 1, 1, rand_bool(), rand_bool())
 		end
 	end
 
@@ -1250,14 +1247,13 @@ function draw_level()
 	srand(800)
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
-			local screen = level.screens[x+1].dim[y+1]
-			local bg = level.screens[x+1].bg
+			local screen, bg = level.screens[x+1].dim[y+1], level.screens[x+1].bg
 			-- draw bg
 			for sx = 0, 7 do
 				for sy = 0, 7 do
 					local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
-					spr(bg.sprite, world_pos.x, world_pos.y, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
-					spr(27, world_pos.x, world_pos.y + level.height * 64, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
+					spr(bg.sprite, world_pos.x, world_pos.y, 1, 1, rand_bool(), rand_bool())
+					spr(27, world_pos.x, world_pos.y + level.height * 64, 1, 1, rand_bool(), rand_bool())
 				end
 			end
 			-- ignore screens set to tombstone vector vec2(-1, -1)

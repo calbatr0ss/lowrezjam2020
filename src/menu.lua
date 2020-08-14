@@ -88,9 +88,9 @@ function draw_menu()
 	drawnoodles(20)
 	spr(1, 45, 0, 1, 1, true, true)
 	rectfill(10, 15, 53, 58, 15)
-	print("levels", 15, 20, 1)
-	print("music: "..music_on, 15, 35, 1)
-	print("credits", 15, 50, 1)
+	?"levels", 15, 20, 1
+	?"music: "..music_on, 15, 35, 1
+	?"credits", 15, 50, 1
 
 	if selected_index == 1 then
 		level_arrow:draw()
@@ -126,7 +126,7 @@ function draw_level_select()
 	srand(800)
 	for x = 0, 7 do
 		for y = 0, 7 do
-			spr(sprite, x*8, y*8, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
+			spr(sprite, x*8, y*8, 1, 1, rand_bool(), rand_bool())
 		end
 	end
 	-- draw map face tile
@@ -134,9 +134,9 @@ function draw_level_select()
 	map(tile.x * 8, tile.y * 8)
 	-- draw level select ui
 	rectfill(0, 0, 63, 22, 7)
-	print("level: "..levelselection, 15, 1, 1)
-	print("highscore", 15, 8, 1)
-	print(format_time(dget(levelselection)), 11, 15, 1)
+	?"level: "..levelselection, 15, 1, 1
+	?"highscore", 15, 8, 1
+	?format_time(dget(levelselection)), 11, 15, 1
 	level_arrows:draw()
 end
 
@@ -157,11 +157,11 @@ function draw_credits()
 	drawnoodles(21)
 	rectfill(0, 5, 64, 26, 15)
 	rectfill(0, 36, 64, 55, 15)
-	print("a hot beans game:", 0, 5, 1)
-	print("cal moody", 14, 13, 1)
-	print("reagan burke", 9, 20, 1)
-	print("special thanks:", 3, 40, 1)
-	print("pico-grunt", 13, 48, 1)
+	?"a hot beans game:", 0, 5, 1
+	?"cal moody", 14, 13, 1
+	?"reagan burke", 9, 20, 1
+	?"special thanks:", 3, 40, 1
+	?"pico-grunt", 13, 48, 1
 end
 
 function update_credits()

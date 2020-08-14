@@ -8,3 +8,7 @@ function format_time(score)
 	local s = score % 60
 	return h..":"..format_time_place(m)..":"..format_time_place(s)
 end
+
+function rand_bool()
+	return flr(rnd(2)) == 1
+end
