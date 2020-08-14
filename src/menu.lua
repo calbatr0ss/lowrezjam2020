@@ -1,91 +1,82 @@
-c_arrows = c_object:new({
-	yo = 0,
-	y = 18,
-	items = {
-		"credits",
-		"music",
-		"levels"
-	},
-	index = 3,
-	music = "on",
-	currentitem = "levels",
-	moved = function(self)
-		sfx(10, -1, 0, 5)
-		self.y += 15
-	end,
-	moveu = function(self)
-		sfx(10, -1, 0, 5)
-		self.y -= 15
-	end,
+level_arrows = nil
+menu_arrows = nil
+level_arrow = nil
+music_on = "on"
+menu_items = {
+	"levels",
+	"music",
+	"credits"
+}
+selected_index = 1
+
+c_arrow = c_object:new({
+	pos = nil,
 	draw = function(self)
-		print("level: "..levelselection, 15, 20, 1)
-		print("music: "..self.music, 15, 35, 1)
-		print("credits", 15, 50, 1)
-		self.yo = self.yo + sin(time()) * 0.3
+		local offset = sin(time()) * 1.2
+		spr(44, self.pos.x + offset, self.pos.y)
+	end
+})
+
+c_arrow_pair = c_object:new({
+	pos = nil,
+	act = nil,
+	draw = function(self)
+		local offset = sin(time()) * 1.2
+		local y = self.pos.y
 		if btn(1) then
-			spr(44, 56, self.y + self.yo)
+			spr(44, 56 + offset, y)
 		else
-			spr(43, 56, self.y + self.yo)
+			spr(43, 56 + offset, y)
 		end
 		if btn(0) then
-			spr(44, 0, self.y + self.yo, 1, 1, true)
+			spr(44, 1 - offset, y, 1, 1, true)
 		else
-			spr(43, 0, self.y + self.yo, 1, 1, true)
+			spr(43, 1 - offset, y, 1, 1, true)
 		end
 	end
 })
 
 function init_menu()
 	clear_state()
-	-- printh("coroutines "..#coroutines)
-	-- printh("particles "..#particles)
-	-- printh("actors "..#actors)
 	levelselection = 1
 	camera(0, 0)
-	screen = "menu"
-	_init = init_menu
+	selected_index = 1
+	level_arrow = c_arrow:new({ pos = vec2(6, 18) })
+	music_arrows = c_arrow_pair:new({ pos = vec2(0, 34) })
+	credits_arrow = c_arrow:new({ pos = vec2(6, 48) })
 	_update = update_menu
 	_draw = draw_menu
-	arrows = c_arrows:new({})
 end
 
 function update_menu()
-	if btnp(input.l) then
+	if btnp(0) or btnp(1) then
+		if selected_index == 2 then
+			sfx(10, -1, 0, 5)
+			music_on = music_on == "on" and "off" or "on"
+		end
+	elseif btnp(2) then
 		sfx(10, -1, 0, 5)
-		if (arrows.currentitem == "levels") levelselection -= 1
-		if (arrows.currentitem == "music") arrows.music = "off"
-	elseif btnp(input.r) then
+		selected_index = mid(1, selected_index - 1, #menu_items)
+	elseif btnp(3) then
 		sfx(10, -1, 0, 5)
-		if (arrows.currentitem == "levels") levelselection += 1
-		if (arrows.currentitem == "music") arrows.music = "on"
+		selected_index = mid(1, selected_index + 1, #menu_items)
 	end
-	if btnp(input.d) and arrows.index != 1 then
-		arrows:moved()
-		arrows.index -= 1
-	elseif btnp(input.u) and arrows.index != #arrows.items then
-		arrows:moveu()
-		arrows.index += 1
+
+	levelselection = mid(1, levelselection, #levels)
+	if btnp(5) or btnp(4) then
+		if selected_index == 1 then
+			init_level_select()
+		elseif selected_index == 3 then
+			_draw = draw_credits
+			_update = update_credits
+		end
 	end
-	--arrows.index = clamp(arrows.index, 1, #arrows.items)
-	arrows.index = mid(1, arrows.index, #arrows.items)
-	arrows.currentitem = arrows.items[arrows.index]
-	if arrows.music == "off" then
-		musicoff = true
+
+	if music_on == "off" then
 		jukebox:stopplaying()
-	elseif arrows.music == "on" then
-		musicoff = false
+	else
 		jukebox.playing = true
 		jukebox:startplayingnow(2, 1000, 7)
-	end
-	--levelselection = clamp(levelselection, 1, #levels)
-	levelselection = mid(1, levelselection, #levels)
-	if btnp(input.o) or btnp(input.x) then
-		if arrows.currentitem != "credits" then
-			init_game()
-		else
-			_draw = drawcredits
-			_update = updatecredits
-		end
 	end
 end
 
@@ -93,29 +84,84 @@ function draw_menu()
 	drawnoodles(20)
 	spr(1, 45, 0, 1, 1, true, true)
 	rectfill(10, 15, 53, 58, 15)
-	if screen == "menu" then
-		--print("level: "..levelselection, 15, 32, 1)
-		arrows:draw()
-		--print(#levels, 0, 0, 7)
-		--print(arrows.currentitem, 0, 0, 7)
-		jukebox:startplayingnow(2, 0, 7)
+	print("levels", 15, 20, 1)
+	print("music: "..music_on, 15, 35, 1)
+	print("credits", 15, 50, 1)
+
+	if selected_index == 1 then
+		level_arrow:draw()
+	elseif selected_index == 2 then
+		music_arrows:draw()
+	else
+		credits_arrow:draw()
+	end
+	jukebox:startplayingnow(2, 0, 7)
+end
+
+function init_level_select()
+	level_arrows = c_arrow_pair:new({
+		pos = vec2(0, 0),
+		y = 1,
+		act = function(direction)
+			if direction == "left" then
+				levelselection = mid(1, levelselection - 1, #levels)
+			else
+				levelselection = mid(1, levelselection + 1, #levels)
+			end
+		end
+	})
+
+	_draw = draw_level_select
+	_update = update_level_select
+end
+
+function draw_level_select()
+	cls()
+	-- draw background
+	local sprite = levels[levelselection].screens[1].bg.sprite
+	srand(800)
+	for x = 0, 7 do
+		for y = 0, 7 do
+			spr(sprite, x*8, y*8, 1, 1, flr(rnd(2))==1, flr(rnd(2))==1)
+		end
+	end
+	-- draw map face tile
+	local tile = levels[levelselection].face_tile
+	map(tile.x * 8, tile.y * 8)
+	-- draw level select ui
+	rectfill(0, 0, 63, 22, 7)
+	print("level: "..levelselection, 15, 1, 1)
+	print("highscore", 15, 8, 1)
+	print(format_time(dget(levelselection)), 11, 15, 1)
+	level_arrows:draw()
+end
+
+function update_level_select()
+	if btnp(0) then
+		level_arrows.act("left")
+	elseif btnp(1) then
+		level_arrows.act("right")
+	elseif btnp(4) then
+		init_menu()
+	elseif btnp(5) then
+		init_game()
 	end
 end
 
-function drawcredits()
+function draw_credits()
 	cls()
 	drawnoodles(21)
 	rectfill(0, 5, 64, 26, 15)
 	rectfill(0, 36, 64, 55, 15)
 	print("a hot beans game:", 0, 5, 1)
-	print("calvin moody", 10, 13, 1)
-	print("reagan burke", 10, 20, 1)
+	print("cal moody", 14, 13, 1)
+	print("reagan burke", 9, 20, 1)
 	print("special thanks:", 3, 40, 1)
 	print("pico-grunt", 13, 48, 1)
 end
 
-function updatecredits()
-	if btnp(input.o) or btnp(input.x) then
+function update_credits()
+	if btnp(4) or btnp(5) then
 		_update = update_menu
 		_draw = draw_menu
 	end
