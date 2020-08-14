@@ -7,6 +7,18 @@ function sinxshake(pos, a, s, t)
 	pos.x = p
 end
 
+function clearcoroutines()
+	for c in all(coroutines) do
+		del(coroutines, c)
+		c = nil
+	end
+	parts = nil
+	tran = nil
+	flock = nil
+	rspwn = nil
+	nextlvl = nil
+end
+
 function resumecoroutines()
 	for c in all(coroutines) do
 	if c and costatus(c) != 'dead' then

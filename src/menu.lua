@@ -38,6 +38,10 @@ c_arrow_pair = c_object:new({
 
 function init_menu()
 	clear_state()
+	level_loaded = false
+	clearcoroutines()
+	menuitem(1)
+	menuitem(2)
 	levelselection = 1
 	camera(0, 0)
 	selected_index = 1
