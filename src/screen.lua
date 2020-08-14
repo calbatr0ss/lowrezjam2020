@@ -37,7 +37,8 @@ function draw_screen()
 		--print("yolo solo", 15, 20, 1)
 		spr(96, 10, 5, 4, 2)
 		spr(100, 20, 20, 4, 2)
-		print("press ❎/🅾️", 11, 44, 1)
+		--print("press ❎/🅾️", 11, 44, 1)
+		print("coming aug 16", 6, 44, 1)
 		jukebox:startplayingnow(1, 2000, 9)
 	end
 end

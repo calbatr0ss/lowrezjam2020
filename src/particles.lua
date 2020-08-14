@@ -54,14 +54,14 @@ s_particle = c_particle:new({
 		srand(time())
 		local time = flr(time() * 10 + self.fo) % #self.sprites + 1
     spr(self.sprites[time], self.p.x, self.p.y, 1, 1, self.flip)
-  end,
-  new = function(self, o)
+  end--[[,
+	new = function(self, o)
     local o = o or {}
     setmetatable(o, self)
     self.__index = self
 		sprites = {0}
     return o
-  end
+  end--]]
   })
 
 -- Reduce the size of this later?
@@ -137,8 +137,8 @@ c_strut = {
 	--This is never called directly. So I'm commenting it out for token-sake
   solve = function(self)
     --solve function is the same as earlier, only life gets reset
-		local send1 = self.ends[1]
-		local send2 = self.ends[2]
+		--local send1 = self.ends[1]
+		--local send2 = self.ends[2]
 
     self.time = 0
 --[[    self.ends[1].lastpos = self.ends[1].p
@@ -213,42 +213,44 @@ rope = {
     self.time = 0
     local send1 = {}
     local send2 = {}
+		local struts = self.struts
     -- Positions need to be set first, and endpoint v needs to be 0
-    for i = 1, #self.struts, 1 do
-      send1 = self.struts[i].ends[1]
-      send2 = self.struts[i].ends[2]
+    for i = 1, #struts, 1 do
+      send1 = struts[i].ends[1]
+      send2 = struts[i].ends[2]
       send1.lastpos = send1.p
       send2.lastpos = send2.p
       send1.p = send1.p + (send1.v * send1.dt)
       send2.p = send2.p + (send2.v * send2.dt)
     end
-    self.struts[1].ends[1].p = player.p + vec2(4, 5)
-    self.struts[#self.struts].ends[2].p = cam.pos + self.o
-    self.struts[1].ends[1].v = player.v
-    self.struts[#self.struts].ends[2].v = vec2(0, 0)
+    struts[1].ends[1].p = player.p + vec2(4, 5)
+    struts[#struts].ends[2].p = cam.pos + self.o
+    struts[1].ends[1].v = player.v
+    struts[#struts].ends[2].v = vec2(0, 0)
     -- position based forces are then applied
-    for i = 1, #self.struts, 1 do
-      send1 = self.struts[i].ends[1]
-      send2 = self.struts[i].ends[2]
-      local strutforces = self.struts[i]:calculateforces()
+    for i = 1, #struts, 1 do
+      send1 = struts[i].ends[1]
+      send2 = struts[i].ends[2]
+      local strutforces = struts[i]:calculateforces()
       send1.f += strutforces
       send2.f -= strutforces
       send1.f += (vec2(0, send1.g) * send1.m)
       send2.f += (vec2(0, send1.g) * send1.m)
     end
     -- finally, velocities are calculated
-    for i = 1, #self.struts, 1 do
-      send1 = self.struts[i].ends[1]
-      send2 = self.struts[i].ends[2]
+    for i = 1, #struts, 1 do
+      send1 = struts[i].ends[1]
+      send2 = struts[i].ends[2]
       send1.v = send1.v + (send1.f / send1.m * send1.dt) - (send1.v * send1.damp*send1.dt)
       send2.v = send2.v + (send2.f / send2.m * send2.dt) - (send2.v * send2.damp*send2.dt)
       send1.f = vec2(0, 0)
       send2.f = vec2(0, 0)
-      self.struts[i].ends[1] = send1
-      self.struts[i].ends[2] = send2
+      struts[i].ends[1] = send1
+      struts[i].ends[2] = send2
     end
-    self.struts[1].ends[1].p = player.p + vec2(4, 5)
-    self.struts[#self.struts].ends[2].p = cam.pos + self.o
+    struts[1].ends[1].p = player.p + vec2(4, 5)
+    struts[#struts].ends[2].p = cam.pos + self.o
+		self.struts = struts
   end,
   draw = function(self)
     pset(-128, 128, 13)

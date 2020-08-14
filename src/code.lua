@@ -17,6 +17,7 @@ actors = {}
 particles = {}
 coroutines = {}
 start_time = 0
+level_loaded = false
 end_time = 0
 musicoff = false
 
@@ -100,12 +101,14 @@ cam = {
 	lerp = 0.15,
 	update = function(self, track_pos)
 		-- lerp follow
+		local p = self.pos
 		local half = 28
 		local third = 39
-		self.pos.x += (track_pos.x - self.pos.x - half) * self.lerp
-		self.pos.y += (track_pos.y - self.pos.y - third) * self.lerp
+		p.x += (track_pos.x - p.x - half) * self.lerp
+		p.y += (track_pos.y - p.y - third) * self.lerp
 		-- use flr to prevent camera jitter
-		camera(flr(self.pos.x), flr(self.pos.y))
+		camera(flr(p.x), flr(p.y))
+		self.pos = p
 	end
 }
 
@@ -194,16 +197,19 @@ c_anim = c_sprite:new({
 			--add 2 to the end to componsate for flr and 1-index
 			self.currentframe = flr(time() * self.fr % self.fc) + 1
 		end
-		return self.currentframe
+		return self.frames[self.currentframe]
 	end,
-	loopbackward = function(self)
+	playonce = function(self)
+		notimplimentedyet = 0
+	end
+	--[[loopbackward = function(self)
 		if self.playing == true then
 			self.currentframe = self.fc - (flr(time() * self.fr % self.fc) + 1)
 		end
 	end,
 	stop = function(self)
 		playing = false
-	end
+	end--]]
 })
 add(classes, c_anim:new({}))
 
@@ -213,29 +219,33 @@ c_object = c_sprite:new({
 	grounded = false,
 	hp = 1,
 	move = function(self)
-		self.p.y += self.v.y
-		while ceil_tile_collide(self) do self.p.y += 1 end
-		while floor_tile_collide(self) do self.p.y -= 1 end
+		local p = self.p
+		local v = self.v
+		p.y += v.y
+		while ceil_tile_collide(self) do p.y += 1 end
+		while floor_tile_collide(self) do p.y -= 1 end
 		-- if ceil_tile_collide(self) then self.p.y += 1 end
 		-- if floor_tile_collide(self) then self.p.y -= 1 end
 
-		self.p.x += self.v.x
-		while right_tile_collide(self) do self.p.x -= 1 end
-		while left_tile_collide(self) do self.p.x += 1 end
+		p.x += v.x
+		while right_tile_collide(self) do p.x -= 1 end
+		while left_tile_collide(self) do p.x += 1 end
 		-- if right_tile_collide(self) then self.p.x -= 1 end
 		-- if left_tile_collide(self) then self.p.x += 1 end
 
 		-- keep inside level boundary
-		while calc_edges(self).l < 0 do self.p.x += 1 end
-		while calc_edges(self).r > level.width*64 do self.p.x -= 1 end
+		while calc_edges(self).l < 0 do p.x += 1 end
+		while calc_edges(self).r > level.width*64 do p.x -= 1 end
 
 		if floor_tile_collide(self) then
-			self.p.y = flr(self.p.y) -- prevent visually stuck in ground
+			p.y = flr(p.y) -- prevent visually stuck in ground
 		end
 		self.grounded = on_ground(self)
 		-- sprite orientation
-		if self.v.x > 0 then self.flip = false
-		elseif self.v.x < 0 then self.flip = true end
+		if v.x > 0 then self.flip = false
+		elseif v.x < 0 then self.flip = true end
+		self.p = p
+		self.v = v
 	end,
 	collide = function(self, other)
 		local personal_space,their_space = calc_edges(self),calc_edges(other)
@@ -289,8 +299,8 @@ c_chalkhold = c_object:new({
 	anim = function(self)
 		if self.activated then
 			self.anims.drip.playing = true
-			self.anims.drip:loopforward()
-			frame = self.anims.drip.frames[self.anims.drip.currentframe]
+			frame = self.anims.drip:loopforward()
+			--frame = self.anims.drip.frames[self.anims.drip.currentframe]
 			--spr(self.sprite.number, self.p.x, self.p.y, 1, 1, self.flip)
 		elseif player.has_chalk then
 			frame = 37
@@ -374,7 +384,8 @@ c_player = c_entity:new({
 		}
 	},
 	anims = nil,
-	movable = true,
+	finished = false,
+	movable = false,
 	statemachine = nil,
 	name = "player",
 	spd = 0.5,
@@ -414,47 +425,48 @@ c_player = c_entity:new({
 		self.stamina = mid(0, self.stamina + amount, self.max_stamina)
 	end,
 	input = function(self)
+		local v = self.v
 		if self.dead then return end -- no zombies
 		if self.holding then
 			local new_vel = vec2(0, 0)
 			if btn(input.u) then
 				-- self.v.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
-				new_vel.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
+				new_vel.y = mid(-self.hold_topspd, v.y - self.hold_spd, self.hold_topspd)
 				-- printh(self.v.y..","..new_vel.y)
 			elseif btn(input.d) then
-				new_vel.y = mid(-self.hold_topspd, self.v.y + self.hold_spd, self.hold_topspd)
+				new_vel.y = mid(-self.hold_topspd, v.y + self.hold_spd, self.hold_topspd)
 			else -- decay
-				self.v.y *= 0.5
-				if abs(self.v.y) < 0.2 then self.v.y = 0 end
+				v.y *= 0.5
+				if abs(v.y) < 0.2 then v.y = 0 end
 			end
 			if btn(input.r) then
-				new_vel.x = mid(-self.hold_topspd, self.v.x + self.hold_spd, self.hold_topspd)
+				new_vel.x = mid(-self.hold_topspd, v.x + self.hold_spd, self.hold_topspd)
 			elseif btn(input.l) then
-				new_vel.x = mid(-self.hold_topspd, self.v.x - self.hold_spd, self.hold_topspd)
+				new_vel.x = mid(-self.hold_topspd, v.x - self.hold_spd, self.hold_topspd)
 			else -- decay
-				self.v.x *= 0.5
-				if abs(self.v.x) < 0.2 then self.v.x = 0 end
+				v.x *= 0.5
+				if abs(v.x) < 0.2 then v.x = 0 end
 			end
 
 			local new_pos = vec2(self.p.x+new_vel.x, self.p.y+new_vel.y)
 			-- printh(abs(vdist(new_pos, self.holding_pos)))
 			if abs(vdist(new_pos, self.holding_pos)) <= self.hold_wiggle or self.on_crack then
-				self.v = new_vel
+				v = new_vel
 			else
-				self.v.y *= 0.5
-				if abs(self.v.y) < 0.2 then self.v.y = 0 end
-				self.v.x *= 0.5
-				if abs(self.v.x) < 0.2 then self.v.x = 0 end
+				v.y *= 0.5
+				if abs(v.y) < 0.2 then v.y = 0 end
+				v.x *= 0.5
+				if abs(v.x) < 0.2 then v.x = 0 end
 			end
 		else
 			-- left/right movement
 			if btn(input.r) then
-				self.v.x = mid(-self.topspd, self.v.x + self.spd, self.topspd)
+				v.x = mid(-self.topspd, v.x + self.spd, self.topspd)
 			elseif btn(input.l) then
-				self.v.x = mid(-self.topspd, self.v.x - self.spd, self.topspd)
+				v.x = mid(-self.topspd, v.x - self.spd, self.topspd)
 			else -- decay
-				self.v.x *= 0.5
-				if abs(self.v.x) < 0.2 then self.v.x = 0 end
+				v.x *= 0.5
+				if abs(v.x) < 0.2 then v.x = 0 end
 			end
 		end
 
@@ -486,8 +498,8 @@ c_player = c_entity:new({
 			self.jumped_at = time()
 			self.num_jumps += 1
 			self.jumping = true
-			self.v.y = 0 -- reset dy before using jump_force
-			self.v.y -= self.jump_force
+			v.y = 0 -- reset dy before using jump_force
+			v.y -= self.jump_force
 			self:add_stamina(-self.jump_cost)
 			sfx(3, -1, 0, 14)
 		end
@@ -512,7 +524,7 @@ c_player = c_entity:new({
 						-- first grabbed, stick position and reset jump
 						self.holding_pos = vec2(self.p.x, self.p.y)
 						self.was_holding = true
-						self.v = vec2(0, 0)
+						v = vec2(0, 0)
 						self.num_jumps = 0
 					end
 					self.holding = true
@@ -532,6 +544,7 @@ c_player = c_entity:new({
 			self.last_held = time()
 			self.was_holding = false
 		end
+		self.v = v
 	end,
 	regen_stamina = function(self)
 		while self.stamina < self.max_stamina do
@@ -552,17 +565,15 @@ c_player = c_entity:new({
 					name = "default",
 					rules = {
 						function(p)
-							if abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
+							if p.finished then
+								return "finished"
+							elseif abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
 								return "walk"
-							end
-						end,
-						function(p)
-							if p.v.y > 0 and p.grounded == false then
+							elseif p.v.y > 0 and p.grounded == false then
 								return "falling"
-							end
-						end,
-						function(p)
-							if (p.v.y < 0) return "jumping"
+							elseif (p.v.y < 0) then
+								 return "jumping"
+							 end
 						end
 					}
 				},
@@ -570,6 +581,7 @@ c_player = c_entity:new({
 					name = "walk",
 					rules = {
 						function(p)
+							if (p.finished) return "finished"
 							if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
 							if p.holding then
 								sfx(6, -2)
@@ -582,33 +594,11 @@ c_player = c_entity:new({
 						end
 					}
 				},
-				--[[
-				walk = {
-					name = "walk",
-					rules = {
-						function(p)
-							if abs(p.v.x) <= 0.01 and p.holding == false then
-								return "default"
-							end
-						end,
-						function(p)
-							if abs(p.v.x) <= 0.01 and p.holding == true then
-								sfx(6, -2)
-								sfx(6, -1, 0, 7)
-								return "hold"
-							end
-						end,
-						function(p)
-							if p.v.y < 0 and p.grounded then
-								return "jumping"
-							end
-						end
-					}
-				},--]]
 				jumping = {
 					name = "jumping",
 					rules = {
 						function(p)
+							if (p.finished) return "finished"
 							if (p.holding) then
 								sfx(6, -2)
 								sfx(6, -1, 0, 7)
@@ -619,27 +609,11 @@ c_player = c_entity:new({
 						end
 					}
 				},
-				--[[jumping = {
-					name = "jumping",
-					rules = {
-						function(p)
-							if (p.v.y > 0) then
-								return "falling"
-							end
-						end,
-						function(p)
-							if (p.holding) then
-								sfx(6, -2)
-								sfx(6, -1, 0, 7)
-								return "hold"
-							end
-						end
-					}
-				},--]]
 				hold = {
 					name = "hold",
 					rules = {
 						function(p)
+							if (p.finished) return "finished"
 							if (p.v.y < 0 and p.holding == false) return "falling"
 							if (abs(p.v.x) <= 0.01 and p.holding == false) return "default"
 							if (abs(p.v.x) >= 0.01 and p.holding == true) return "shimmyx"
@@ -649,52 +623,19 @@ c_player = c_entity:new({
 						end
 					}
 				},
-						--[[function(p)
-							if p.v.y < 0 and p.holding == false then
-								return "falling"
-							end
-						end,
+				finished = {
+					name = "finished",
+					rules = {
 						function(p)
-							if abs(p.v.x) <= 0.01 and p.holding == false then
-								return "default"
-							end
-						end,
-						function(p)
-							if p.v.x >= 0.01 and p.holding == true then
-								return "shimmyy"
-							end
-							if p.v.y <= -0.01 and p.holding == true then
-								return "shimmyx"
-							end
-						end,
-						function(p)
-							if (not p.holding) return "default"
+							return "finished"
 						end
-					}--]]
-				--[[
+					}
+				},
 				shimmyx = {
 					name = "shimmyx",
 					rules = {
 						function(p)
-							if abs(p.v.x) < 0.01 and p.holding == true then
-								--sfx(6, -2)
-								--sfx(6, -1, 0, 7)
-								return "hold"
-							end
-						end,
-						function(p)
-							if (not p.holding) return "default"
-						end,
-						function(p)
-							if (not p.holding) and p.v.y < 0.0 then
-								return "falling"
-							end
-						end
-					}--]]
-				shimmyx = {
-					name = "shimmyx",
-					rules = {
-						function(p)
+							if (p.finished) return "finished"
 							if (abs(p.v.x) < 0.01 and p.holding) return "hold"
 							if (not p.holding) return "default"
 							if (not p.holding and p.v.y < 0.0) return "falling"
@@ -702,30 +643,11 @@ c_player = c_entity:new({
 						end
 					}
 				},
-				--[[shimmyy = {
-					name = "shimmyy",
-					rules = {
-						function(p)
-							if abs(p.v.y) < 0.01 and p.holding == true then
-								--sfx(6, -2)
-								--sfx(6, -1, 0, 7)
-								return "hold"
-							end
-						end,
-						function(p)
-							if (not p.holding) return "default"
-						end,
-						function(p)
-							if not p.holding and p.v.y < 0.0 then
-								return "falling"
-							end
-						end
-					}
-				},--]]
 				shimmyy = {
 					name = "shimmyy",
 					rules = {
 						function(p)
+							if (p.finished) return "finished"
 							if (abs(p.v.y) < 0.01 and p.holding) return "hold"
 							if (not p.holding) return "default"
 							if (not p.holding and p.v.y < 0.0) return "falling"
@@ -737,6 +659,7 @@ c_player = c_entity:new({
 					name = "falling",
 					rules = {
 						function(p)
+							if (p.finished) return "finished"
 							if (p.grounded) and p.v.y <= 4.5 then
 								local particle2 = smokepuff:new({
 									p = player.p,
@@ -768,17 +691,11 @@ c_player = c_entity:new({
 								end
 								player:die()
 								return "dead"
-							end
-						end,
-						function(p)
-							if (p.holding) then
+							elseif (p.holding) then
 								sfx(6, -2)
 								sfx(6, -1, 0, 7)
 								return "hold"
-							end
-						end,
-						function(p)
-							if (p.v.y < 0) then
+							elseif (p.v.y < 0) then
 									add(particles, airjump:new({p = player.p, v = player.v * -10}))
 									--spr(16, player.p.x + 4, player.p.y + 10)
 								return "jumping"
@@ -873,6 +790,8 @@ c_player = c_entity:new({
 			elseif actor.name == "goal" then
 				if nextlvl == nil or costatus(nextlvl) == 'dead' then
 					nextlvl = cocreate(actor.next_level)
+					--player.state = "finished"
+					player.finished = true
 					coresume(nextlvl, actor)
 					add(coroutines, nextlvl)
 				end
@@ -898,28 +817,30 @@ c_player = c_entity:new({
 		--assign state, make animation play, set frame number to existing sprite hitbox
 		elseif state=="walk" then
 			self.anims.walk.playing = true
-			self.anims.walk:loopforward()
-			number = self.anims.walk.frames[self.anims.walk.currentframe]
+			number = self.anims.walk:loopforward()
+			--number = self.anims.walk.frames[self.anims.walk.currentframe]
 		elseif state == "hold" then
 			number = 5
 			if (self.jump_newly_pressed) hud:shakehand()
 		elseif state == "shimmyx" then
 			self.anims.shimmyx.playing = true
-			self.anims.shimmyx:loopforward()
-			number = self.anims.shimmyx.frames[self.anims.shimmyx.currentframe]
+			number = self.anims.shimmyx:loopforward()
+			--number = self.anims.shimmyx.frames[self.anims.shimmyx.currentframe]
 		elseif state == "shimmyy" then
 			self.anims.hold.playing = true
-			self.anims.hold:loopforward()
-			number = self.anims.hold.frames[self.anims.hold.currentframe]
+			number = self.anims.hold:loopforward()
+			--number = self.anims.hold.frames[self.anims.hold.currentframe]
 		elseif state=="jumping" then
 			number = 2
 		elseif state == "falling" then
 			self.anims.falling.playing = true
-			self.anims.falling:loopforward()
-			frame = self.anims.falling.frames[self.anims.falling.currentframe]
-			number = frame
+			number = self.anims.falling:loopforward()
+			--frame = self.anims.falling.frames[self.anims.falling.currentframe]
+			--number = frame
 		elseif state == "dead" then
 			number = 14
+		elseif state == "finished" then
+			number = 106
 		end
 		self.state = state
 		self.sprites.default.number = number
@@ -1364,6 +1285,7 @@ function draw_game()
 	--drawtrees()
 	cam:update(player.p)
 	hud:draw()
+	drawtransition()
 	--print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
 end
 
@@ -1374,7 +1296,14 @@ function init_game()
 	load_level(levelselection)
 
 	player.statemachine.parent = player
-	player.movable = true
+	player.finished = false
+	--transition into screen
+	if (tran == nil or costatus(tran) == "dead") and not level_loaded then
+		tran = cocreate(transition)
+		add(coroutines, tran)
+	end
+	level_loaded = true
+	--player.movable = true
 	hud = c_hud:new({})
 	toprope = rope:create()
 	-- this if statement prevents a bug when resuming after returning to menu
@@ -1392,20 +1321,23 @@ function init_game()
 end
 
 function respawn()
-	player.v = vec2(0, 0)
-	local respawntimer = time() + 1
-	while time() < respawntimer and player.dead do
-		yield()
+	if not player.finished then
+		player.v = vec2(0, 0)
+		local respawntimer = time() + 1
+		while time() < respawntimer and player.dead do
+			yield()
+		end
+		player.dead = false
+		clear_state()
+		init_game()
+		for i = 1, 10, 1 do
+			local o = player.p + vec2(sin(10/i) * 10 - 4, cos(10/i) * 10 - 4)
+			local p = c_particle:new({p = player.p + vec2(sin(10/i) * 15, cos(10/i) * 15), v = (player.p-o)*5, life = 10, c = 14})
+			add(particles, p)
+		end
+		sfx(12, 3)
+		player.movable = true
 	end
-	player.dead = false
-	clear_state()
-	init_game()
-	for i = 1, 10, 1 do
-		local o = player.p + vec2(sin(10/i) * 10 - 4, cos(10/i) * 10 - 4)
-		local p = c_particle:new({p = player.p + vec2(sin(10/i) * 15, cos(10/i) * 15), v = (player.p-o)*5, life = 10, c = 14})
-		add(particles, p)
-	end
-	sfx(12, 3)
 end
 
 c_goal = c_object:new({
@@ -1437,22 +1369,28 @@ c_goal = c_object:new({
 		if not level.next then
 			-- todo: no next level selected... beat the game?
 		end
-		clear_state()
 		levelselection = level.next
+		for i = 64, 1, -5 do
+			transitionbox = {vec2(i, 0), vec2(64, 64)}
+			yield()
+		end
+		transitionbox = nil
+		level_loaded = false
+		clear_state()
 		init_game()
 	end,
 	draw = function(self)
 		local frame = self.anims.wave:loopforward()
-		frame = self.anims.wave.frames[frame]
+		--frame = self.anims.wave.frames[frame]
 		spr(frame, self.p.x, self.p.y)
 	end
 })
 add(classes, c_goal:new({}))
 
-function drawtrees()
+--[[function drawtrees()
 	srand(time())
 	sspr(80, 32, 16, 16, player.p.x, player.p.y, flr(rnd(10)) + 16, flr(rnd(10)) + 16)
-end
+end--]]
 
 function spawnflock()
 	while true do
@@ -1469,5 +1407,25 @@ function spawnflock()
 			end
 		end
 		yield()
+	end
+end
+
+-- Transitioning into start of level
+function transition()
+	for i = 64, 1, -5 do
+		transitionbox = {vec2(0, 0), vec2(i, 64)}
+		yield()
+	end
+	transitionbox = nil
+	player.movable = true
+end
+
+-- Drawing the actual transition
+function drawtransition()
+	if transitionbox != nil then
+		rectfill(cam.pos.x + transitionbox[1].x,
+		cam.pos.y + transitionbox[1].y,
+		cam.pos.x + transitionbox[2].x,
+		cam.pos.y + transitionbox[2].y, 0)
 	end
 end

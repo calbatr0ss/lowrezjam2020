@@ -40,6 +40,10 @@ function init_menu()
 	-- printh("coroutines "..#coroutines)
 	-- printh("particles "..#particles)
 	-- printh("actors "..#actors)
+	level_loaded = false
+	clearcoroutines()
+	menuitem(1)
+	menuitem(2)
 	levelselection = 1
 	camera(0, 0)
 	screen = "menu"
