@@ -18,17 +18,26 @@ function floor_tile_collide(obj)
 	return solid_tile(edges.l, edges.b) or solid_tile(edges.r, edges.b)
 end
 
+function floor_ledge_collide(obj)
+	local edges = calc_edges(obj)
+	return ledge_tile(edges.l, edges.b) or ledge_tile(edges.r, edges.b)
+end
+
 function on_ground(obj)
 	local edges = calc_edges(obj)
 	return solid_tile(edges.l, edges.b+1) or solid_tile(edges.r, edges.b+1)
 end
 
-function against_tile(obj)
+function on_ledge(obj)
 	local edges = calc_edges(obj)
-	return solid_tile(edges.l, edges.b+1) or solid_tile(edges.r, edges.b+1) or
-		solid_tile(edges.l, edges.t-1) or solid_tile(edges.r, edges.t-1) or
-		solid_tile(edges.l-1, edges.b) or solid_tile(edges.l-1, edges.t) or
-		solid_tile(edges.r+1, edges.b) or solid_tile(edges.r+1, edges.t)
+	return (not ledge_tile(edges.l, edges.b) and ledge_tile(edges.l, edges.b+1)) or
+		(not ledge_tile(edges.r, edges.b) and ledge_tile(edges.r, edges.b+1))
+end
+
+function ledge_below(obj)
+	local edges = calc_edges(obj)
+	return (ledge_tile(edges.l, edges.b+7) and not ledge_tile(edges.l, edges.b-1)) or
+		(ledge_tile(edges.r, edges.b+7) and not ledge_tile(edges.r, edges.b-1))
 end
 
 function calc_edges(obj)

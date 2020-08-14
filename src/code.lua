@@ -1,17 +1,28 @@
 -- yolosolo
+-- a hot beans game
+-- cal moody and reagan burke
 -- lowrezjam 2020
 
--- flag reference
-  -- sprite
-	-- 0: ledges
-	-- 1: solid ground
-	-- 2: jug
-	-- 3: crimp
-	-- 4: crack
+--[[ flag reference
+	sprite
+		0: ledges
+		1: solid ground
+		2: jug
+		3: crimp
+		4: crack
+--]]
+
+--[[ input reference
+	left: 0
+	right: 1
+	up: 2
+	down: 3
+	o: 4
+	x: 5
+--]]
 
 player = nil
 g_force = 0.2
-input= { l = 0, r = 1, u = 2, d = 3, o = 4, x = 5 }
 classes = {}
 actors = {}
 particles = {}
@@ -217,6 +228,10 @@ add(classes, c_anim:new({}))
 c_object = c_sprite:new({
 	name="object",
 	grounded = false,
+	pass_thru = false,
+	pass_thru_pressed_at = 0,
+	was_pass_thru_held = false,
+	pass_thru_time = 0.2,
 	hp = 1,
 	move = function(self)
 		local p = self.p
@@ -226,6 +241,9 @@ c_object = c_sprite:new({
 		while floor_tile_collide(self) do p.y -= 1 end
 		-- if ceil_tile_collide(self) then self.p.y += 1 end
 		-- if floor_tile_collide(self) then self.p.y -= 1 end
+		if self.v.y >= 0 and not self.pass_thru and ledge_below(self) then
+			while floor_ledge_collide(self) do self.p.y -= 1 end
+		end
 
 		p.x += v.x
 		while right_tile_collide(self) do p.x -= 1 end
@@ -240,7 +258,7 @@ c_object = c_sprite:new({
 		if floor_tile_collide(self) then
 			p.y = flr(p.y) -- prevent visually stuck in ground
 		end
-		self.grounded = on_ground(self)
+		self.grounded = on_ground(self) or (on_ledge(self) and not self.pass_thru and self.v.y >= 0)
 		-- sprite orientation
 		if v.x > 0 then self.flip = false
 		elseif v.x < 0 then self.flip = true end
@@ -429,20 +447,20 @@ c_player = c_entity:new({
 		if self.dead then return end -- no zombies
 		if self.holding then
 			local new_vel = vec2(0, 0)
-			if btn(input.u) then
+			if btn(2) then
 				-- self.v.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
 				new_vel.y = mid(-self.hold_topspd, v.y - self.hold_spd, self.hold_topspd)
 				-- printh(self.v.y..","..new_vel.y)
-			elseif btn(input.d) then
-				new_vel.y = mid(-self.hold_topspd, v.y + self.hold_spd, self.hold_topspd)
+			elseif btn(3) then
+				new_vel.y = mid(-self.hold_topspd, self.v.y + self.hold_spd, self.hold_topspd)
 			else -- decay
 				v.y *= 0.5
 				if abs(v.y) < 0.2 then v.y = 0 end
 			end
-			if btn(input.r) then
-				new_vel.x = mid(-self.hold_topspd, v.x + self.hold_spd, self.hold_topspd)
-			elseif btn(input.l) then
-				new_vel.x = mid(-self.hold_topspd, v.x - self.hold_spd, self.hold_topspd)
+			if btn(1) then
+				new_vel.x = mid(-self.hold_topspd, self.v.x + self.hold_spd, self.hold_topspd)
+			elseif btn(0) then
+				new_vel.x = mid(-self.hold_topspd, self.v.x - self.hold_spd, self.hold_topspd)
 			else -- decay
 				v.x *= 0.5
 				if abs(v.x) < 0.2 then v.x = 0 end
@@ -460,21 +478,31 @@ c_player = c_entity:new({
 			end
 		else
 			-- left/right movement
-			if btn(input.r) then
-				v.x = mid(-self.topspd, v.x + self.spd, self.topspd)
-			elseif btn(input.l) then
-				v.x = mid(-self.topspd, v.x - self.spd, self.topspd)
+			if btn(1) then
+				self.v.x = mid(-self.topspd, self.v.x + self.spd, self.topspd)
+			elseif btn(0) then
+				self.v.x = mid(-self.topspd, self.v.x - self.spd, self.topspd)
 			else -- decay
 				v.x *= 0.5
 				if abs(v.x) < 0.2 then v.x = 0 end
 			end
+			-- pass thru
+			if btn(3) then
+				if not self.was_pass_thru_pressed then
+					self.pass_thru_pressed_at = time()
+				end
+				self.was_pass_thru_pressed = true
+			else
+				self.was_pass_thru_pressed = false
+			end
+			self.pass_thru = time() - self.pass_thru_pressed_at > self.pass_thru_time and self.was_pass_thru_pressed
 		end
 
 		-- jump
 		if self.grounded then self.num_jumps = 0 end
 
 		-- only jump on a new button press
-		if btn(input.x) then
+		if btn(5) then
 			if not self.jump_pressed then
 				self.jump_newly_pressed = true
 			else
@@ -494,7 +522,7 @@ c_player = c_entity:new({
 			self.jump_newly_pressed
 		if not jump_window then self.jumping = false end
 
-		if self.can_jump and btn(input.x) then
+		if self.can_jump and btn(5) then
 			self.jumped_at = time()
 			self.num_jumps += 1
 			self.jumping = true
@@ -505,7 +533,7 @@ c_player = c_entity:new({
 		end
 
 		-- shake the hud if you run out of stamina
-		if self.stamina <= 0 and btn(input.x) and self.jump_newly_pressed then
+		if self.stamina <= 0 and btn(5) and self.jump_newly_pressed then
 			hud:shakebar()
 		end
 
@@ -517,7 +545,7 @@ c_player = c_entity:new({
 		-- hold
 		local can_hold_again = (time() - self.last_held) > self.holding_cooldown
 		local on_any_hold = self.on_jug or self.on_crimp or self.on_crack
-		if btn(input.o) then
+		if btn(4) then
 			if can_hold_again then
 				if on_any_hold then
 					if self.holding == false then
@@ -915,6 +943,7 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 2,
+		face_tile = vec2(0, 1),
 		screens = {
 			--width
 			{
@@ -946,6 +975,7 @@ levels = {
 		width = 1,
 		height = 2,
 		next = 3,
+		face_tile = vec2(0, 2),
 		screens = {
 			--width
 			{
@@ -1148,7 +1178,20 @@ function finish_level()
 
 	local score = end_time - start_time
 	local formatted_time = format_time(score)
-	printh("time taken "..formatted_time.hours..":"..formatted_time.minutes..":"..formatted_time.seconds)
+	printh("time taken "..formatted_time)
+
+	save_highscore(score)
+end
+
+function save_highscore(score)
+	local prev = dget(levelselection)
+	if prev ~= 0 then
+		if score < prev then
+			dset(levelselection, score)
+		end
+	else
+		dset(levelselection, score)
+	end
 end
 
 function clear_state()
@@ -1236,9 +1279,16 @@ end
 function reload_map()
 	reload(0x2000, 0x2000, 0x1000)
 	setup()
+	-- todo: does this work like i think it does?
+	for x = 0, 63 do
+		for y = 32, 63 do
+			mset(x, y, 0)
+		end
+	end
 end
 
 function _init()
+	cartdata("hot_beans_yolosolo")
 	setup()
 	jukebox = c_jukebox:new({})
 	init_screen()
@@ -1369,6 +1419,8 @@ c_goal = c_object:new({
 		if not level.next then
 			-- todo: no next level selected... beat the game?
 		end
+		clear_state()
+		finish_level()
 		levelselection = level.next
 		for i = 64, 1, -5 do
 			transitionbox = {vec2(i, 0), vec2(64, 64)}
