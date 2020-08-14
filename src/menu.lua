@@ -70,8 +70,10 @@ function update_menu()
 	arrows.index = mid(1, arrows.index, #arrows.items)
 	arrows.currentitem = arrows.items[arrows.index]
 	if arrows.music == "off" then
+		musicoff = true
 		jukebox:stopplaying()
 	elseif arrows.music == "on" then
+		musicoff = false
 		jukebox.playing = true
 		jukebox:startplayingnow(2, 1000, 7)
 	end
@@ -95,7 +97,7 @@ function draw_menu()
 		--print("level: "..levelselection, 15, 32, 1)
 		arrows:draw()
 		--print(#levels, 0, 0, 7)
-		print(arrows.currentitem, 0, 0, 7)
+		--print(arrows.currentitem, 0, 0, 7)
 		jukebox:startplayingnow(2, 0, 7)
 	end
 end
