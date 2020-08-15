@@ -209,7 +209,7 @@ c_object = c_sprite:new({
 	was_pass_thru_held = false,
 	pass_thru_time = 0.2,
 	gonna_hit_ledge = false,
-	update = function(self) end,
+	update = function(self)	end,
 	move = function(self)
 		local p, v = self.p, self.v
 		p.y += v.y
@@ -362,7 +362,6 @@ c_entity = c_object:new({
 		if not self.holding then
 			if not self.grounded or self.jumping then
 				self.v.y += g_force
-				-- todo: pick good grav bounds -2,5
 				self.v.y = mid(-999, self.v.y, 5) -- clamp
 			else
 				self.v.y = 0
@@ -399,6 +398,7 @@ c_player = c_entity:new({
 	squatting = false,
 	jumping = false,
 	can_jump = true,
+	jump_after_hold_window = 0.3, --300ms
 	jump_delay = 0.5,
 	jump_cost = 25,
 	jump_pressed = false,
@@ -498,8 +498,10 @@ c_player = c_entity:new({
 		end
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
+		local can_jump_after_holding = self.grounded or time() - self.last_held < self.jump_after_hold_window
 		self.can_jump = self.num_jumps < self.max_jumps and
 			jump_window and
+			can_jump_after_holding and
 			self.stamina > 0 and
 			not self.holding and
 			self.jump_newly_pressed
@@ -1342,9 +1344,11 @@ c_goal = c_object:new({
 		})
 	},
 	next_level = function(self)
-		save_highscore(time() - start_time)
-		-- todo: add coroutine for an end of level anim
-		local reloadtime = time() + 5
+		local end_time = time()
+		formatted_time = format_time(end_time - start_time)
+		save_highscore(end_time - start_time)
+
+		local reloadtime = end_time + 5
 		jukebox.playing = true
 		jukebox:startplayingnow(5)
 		player.movable = false
@@ -1372,11 +1376,6 @@ c_goal = c_object:new({
 	end
 })
 add(classes, c_goal:new({}))
-
---[[function drawtrees()
-	srand(time())
-	sspr(80, 32, 16, 16, player.p.x, player.p.y, flr(rnd(10)) + 16, flr(rnd(10)) + 16)
-end--]]
 
 function spawnflock()
 	while true do
