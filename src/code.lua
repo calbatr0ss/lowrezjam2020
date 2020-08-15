@@ -1117,16 +1117,6 @@ function load_level(level_number)
 	start_time = time()
 end
 
-function finish_level()
-	end_time = time()
-
-	local score = end_time - start_time
-	local formatted_time = format_time(score)
-	printh("time taken "..formatted_time)
-
-	save_highscore(score)
-end
-
 function save_highscore(score)
 	local prev = dget(levelselection)
 	if prev ~= 0 then
@@ -1151,18 +1141,19 @@ function load_obj(w_pos, m_pos, class, tile)
 	local sprite = class.sprites.default.number
 	if sprite == tile then
 		if class.name == "granola" then
-			add(actors, class:new({p = w_pos, map_pos = m_pos}))
+			add(actors, class:new({ p = w_pos, map_pos = m_pos }))
 		elseif class.name == "chalk" then
-			add(actors, class:new({p = w_pos, map_pos = m_pos}))
+			add(actors, class:new({ p = w_pos, map_pos = m_pos }))
 		elseif class.name == "chalkhold" then
 			-- todo: fix chalkholds?
-			add(actors, class:new({p = w_pos}))
+			add(actors, class:new({ p = w_pos }))
 			mset(m_pos.x, m_pos.y, 0)
 		elseif class.name == "player" then
-			player = class:new({p = w_pos})
+			player = class:new({ p = w_pos })
 			mset(m_pos.x, m_pos.y, 0)
+			cam.pos = vec2(w_pos.x, w_pos.y) -- copy world_pos to avoid reference issues
 		elseif class.name == "goal" then
-			add(actors, class:new({p = w_pos}))
+			add(actors, class:new({ p = w_pos }))
 			mset(m_pos.x, m_pos.y, 0)
 		end
 	end
@@ -1356,7 +1347,7 @@ c_goal = c_object:new({
 		})
 	},
 	next_level = function(self)
-		finish_level()
+		save_highscore(time() - start_time)
 		-- todo: add coroutine for an end of level anim
 		local reloadtime = time() + 5
 		jukebox.playing = true
@@ -1369,7 +1360,6 @@ c_goal = c_object:new({
 		if not level.next then
 			-- todo: no next level selected... beat the game?
 		end
-		clear_state()
 		levelselection = level.next
 		for i = 64, 1, -5 do
 			transitionbox = {vec2(i, 0), vec2(64, 64)}
