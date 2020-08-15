@@ -499,11 +499,6 @@ c_player = c_entity:new({
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
 		local can_jump_after_holding = self.grounded or time() - self.last_held < self.jump_after_hold_window
-		if can_jump_after_holding then
-			printh("jump")
-		else
-			printh("NO JUMPY")
-		end
 		self.can_jump = self.num_jumps < self.max_jumps and
 			jump_window and
 			can_jump_after_holding and
@@ -1363,10 +1358,11 @@ c_goal = c_object:new({
 		})
 	},
 	next_level = function(self)
-		formatted_time = format_time(time() - start_time)
-		save_highscore(time() - start_time)
+		local end_time = time()
+		formatted_time = format_time(end_time - start_time)
+		save_highscore(end_time - start_time)
 
-		local reloadtime = time() + 5
+		local reloadtime = end_time + 5
 		jukebox.playing = true
 		jukebox:startplayingnow(5)
 		player.movable = false
