@@ -209,6 +209,7 @@ c_object = c_sprite:new({
 	was_pass_thru_held = false,
 	pass_thru_time = 0.2,
 	gonna_hit_ledge = false,
+	update = function(self)	end,
 	move = function(self)
 		local p, v = self.p, self.v
 		p.y += v.y
@@ -256,11 +257,6 @@ c_pickup = c_object:new({
 	active = true,
 	respawn_time = 5,
 	picked_up_at = nil,
-	update = function(self)
-		if self.picked_up_at == nil or time() - self.picked_up_at > self.respawn_time then
-			self.active = true
-		end
-	end,
 	draw = function(self)
 		if self.active then
 			c_object.draw(self)
@@ -275,6 +271,11 @@ add(classes, c_pickup:new({}))
 
 c_granola = c_pickup:new({
 	name = "granola",
+	update = function(self)
+		if self.picked_up_at == nil or time() - self.picked_up_at > self.respawn_time then
+			self.active = true
+		end
+	end,
 	sprites = {
 		default = {
 			number = 42,
@@ -361,7 +362,6 @@ c_entity = c_object:new({
 		if not self.holding then
 			if not self.grounded or self.jumping then
 				self.v.y += g_force
-				-- todo: pick good grav bounds -2,5
 				self.v.y = mid(-999, self.v.y, 5) -- clamp
 			else
 				self.v.y = 0
@@ -398,6 +398,7 @@ c_player = c_entity:new({
 	squating = false,
 	jumping = false,
 	can_jump = true,
+	jump_after_hold_window = 0.3, --300ms
 	jump_delay = 0.5,
 	jump_cost = 25,
 	jump_pressed = false,
@@ -431,9 +432,7 @@ c_player = c_entity:new({
 		if self.holding then
 			local new_vel = vec2(0, 0)
 			if btn(2) then
-				-- self.v.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
 				new_vel.y = mid(-self.hold_topspd, v.y - self.hold_spd, self.hold_topspd)
-				-- printh(self.v.y..","..new_vel.y)
 			elseif btn(3) then
 				new_vel.y = mid(-self.hold_topspd, self.v.y + self.hold_spd, self.hold_topspd)
 			else -- decay
@@ -450,7 +449,6 @@ c_player = c_entity:new({
 			end
 
 			local new_pos = vec2(self.p.x+new_vel.x, self.p.y+new_vel.y)
-			-- printh(abs(vdist(new_pos, self.holding_pos)))
 			if abs(vdist(new_pos, self.holding_pos)) <= self.hold_wiggle or self.on_crack then
 				v = new_vel
 			else
@@ -477,7 +475,6 @@ c_player = c_entity:new({
 				self.was_pass_thru_pressed = true
 				self.squating = true
 			else
-
 				self.was_pass_thru_pressed = false
 				self.squating = false
 			end
@@ -501,8 +498,10 @@ c_player = c_entity:new({
 		end
 
 		local jump_window = time() - self.jumped_at > self.jump_delay
+		local can_jump_after_holding = self.grounded or time() - self.last_held < self.jump_after_hold_window
 		self.can_jump = self.num_jumps < self.max_jumps and
 			jump_window and
+			can_jump_after_holding and
 			self.stamina > 0 and
 			not self.holding and
 			self.jump_newly_pressed
@@ -1359,9 +1358,11 @@ c_goal = c_object:new({
 		})
 	},
 	next_level = function(self)
-		save_highscore(time() - start_time)
-		-- todo: add coroutine for an end of level anim
-		local reloadtime = time() + 5
+		local end_time = time()
+		formatted_time = format_time(end_time - start_time)
+		save_highscore(end_time - start_time)
+
+		local reloadtime = end_time + 5
 		jukebox.playing = true
 		jukebox:startplayingnow(5)
 		player.movable = false
@@ -1389,11 +1390,6 @@ c_goal = c_object:new({
 	end
 })
 add(classes, c_goal:new({}))
-
---[[function drawtrees()
-	srand(time())
-	sspr(80, 32, 16, 16, player.p.x, player.p.y, flr(rnd(10)) + 16, flr(rnd(10)) + 16)
-end--]]
 
 function spawnflock()
 	while true do
