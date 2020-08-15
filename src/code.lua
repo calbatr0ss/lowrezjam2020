@@ -332,7 +332,7 @@ add(classes, c_chalk:new({}))
 
 -- Music manager
 c_jukebox = c_object:new({
-	songs = {0, 6, 8, 26, 38},
+	songs = {0, 6, 8, 23, 35},
 	currentsong = -1,
 	playing = true,
 	startplayingnow = function(self, songn, f, chmsk)
@@ -1434,16 +1434,19 @@ function drawtransition()
 end
 
 function getsendy()
-	for i = 0, #"let's get sendy" + 1, 1 do
-		local sinval = flr(sin(time()-i/8)*-1.5)
-		circfill(cam.pos.x+i*4, cam.pos.y+12+sinval, 5, 7)
+	local cx = cam.pos.x
+	local cy = cam.pos.y
+	local sinvals = {}
+	for i = 1, #"let's get sendy" + 1, 1 do
+		add(sinvals, flr(sin(time()-i/8)*-1.5))
+		circfill(cx+i*4-2, cy+12+sinvals[i], 5, 7)
 	end
-	for i = 0, #"let's get sendy", 1	do
-		local sinval = flr(sin(time()-i/8)*-1.5)
-		print(sub("let's get sendy!",i,i), cam.pos.x+i*4-2,cam.pos.y+10+sinval,1)
+	for i = 1, #"let's get sendy", 1	do
+		--local sinval = flr(sin(time()-i/8)*-1.5)
+		?sub("let's get sendy!",i,i), cx+i*4-2,cy+10+sinvals[i],1
 	end
 	if (formatted_time != nil) then
-		rectfill(cam.pos.x + (31-#formatted_time*2), cam.pos.y + 23, cam.pos.x + (33+#formatted_time*2), cam.pos.y + 31, 7)
-		print(formatted_time, cam.pos.x + (33-#formatted_time*2), cam.pos.y + 25, 1)
+		rectfill(cx + (31-#formatted_time*2), cy + 23, cx + (33+#formatted_time*2), cy + 31, 7)
+		?formatted_time, cx + (33-#formatted_time*2), cy + 25, 1
 	end
 end
