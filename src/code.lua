@@ -233,23 +233,24 @@ c_object = c_sprite:new({
 	pass_thru_pressed_at = 0,
 	was_pass_thru_held = false,
 	pass_thru_time = 0.2,
+	gonna_hit_ledge = false,
 	move = function(self)
-		local p = self.p
-		local v = self.v
+		local p, v = self.p, self.v
 		p.y += v.y
 		while ceil_tile_collide(self) do p.y += 1 end
 		while floor_tile_collide(self) do p.y -= 1 end
-		-- if ceil_tile_collide(self) then self.p.y += 1 end
-		-- if floor_tile_collide(self) then self.p.y -= 1 end
-		if self.v.y >= 0 and not self.pass_thru and ledge_below(self) then
-			while floor_ledge_collide(self) do self.p.y -= 1 end
+
+		if v.y >= 0 and not self.pass_thru and (ledge_below(self) or self.gonna_hit_ledge) then
+			-- we know we're about to hit a ledge so we need to re-enter this condition next frame
+			self.gonna_hit_ledge = true
+			while floor_ledge_collide(self) do p.y -= 1 end
+		else
+			self.gonna_hit_ledge = false
 		end
 
 		p.x += v.x
 		while right_tile_collide(self) do p.x -= 1 end
 		while left_tile_collide(self) do p.x += 1 end
-		-- if right_tile_collide(self) then self.p.x -= 1 end
-		-- if left_tile_collide(self) then self.p.x += 1 end
 
 		-- keep inside level boundary
 		while calc_edges(self).l < 0 do p.x += 1 end
@@ -258,7 +259,7 @@ c_object = c_sprite:new({
 		if floor_tile_collide(self) then
 			p.y = flr(p.y) -- prevent visually stuck in ground
 		end
-		self.grounded = on_ground(self) or (on_ledge(self) and not self.pass_thru and self.v.y >= 0)
+		self.grounded = on_ground(self) or (on_ledge(self) and not self.pass_thru and v.y >= 0)
 		-- sprite orientation
 		if v.x > 0 then self.flip = false
 		elseif v.x < 0 then self.flip = true end
@@ -1219,7 +1220,7 @@ end
 function reload_map()
 	reload(0x2000, 0x2000, 0x1000)
 	setup()
-	-- todo: does this work like i think it does?
+	-- clear the draw space
 	for x = 0, 63 do
 		for y = 32, 63 do
 			mset(x, y, 0)
