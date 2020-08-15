@@ -209,6 +209,7 @@ c_object = c_sprite:new({
 	was_pass_thru_held = false,
 	pass_thru_time = 0.2,
 	gonna_hit_ledge = false,
+	update = function(self) end,
 	move = function(self)
 		local p, v = self.p, self.v
 		p.y += v.y
@@ -256,11 +257,6 @@ c_pickup = c_object:new({
 	active = true,
 	respawn_time = 5,
 	picked_up_at = nil,
-	update = function(self)
-		if self.picked_up_at == nil or time() - self.picked_up_at > self.respawn_time then
-			self.active = true
-		end
-	end,
 	draw = function(self)
 		if self.active then
 			c_object.draw(self)
@@ -275,6 +271,11 @@ add(classes, c_pickup:new({}))
 
 c_granola = c_pickup:new({
 	name = "granola",
+	update = function(self)
+		if self.picked_up_at == nil or time() - self.picked_up_at > self.respawn_time then
+			self.active = true
+		end
+	end,
 	sprites = {
 		default = {
 			number = 42,
@@ -395,7 +396,7 @@ c_player = c_entity:new({
 	jumped_at = 0,
 	num_jumps = 0,
 	max_jumps = 1,
-	squating = false,
+	squatting = false,
 	jumping = false,
 	can_jump = true,
 	jump_delay = 0.5,
@@ -431,9 +432,7 @@ c_player = c_entity:new({
 		if self.holding then
 			local new_vel = vec2(0, 0)
 			if btn(2) then
-				-- self.v.y = mid(-self.hold_topspd, self.v.y - self.hold_spd, self.hold_topspd)
 				new_vel.y = mid(-self.hold_topspd, v.y - self.hold_spd, self.hold_topspd)
-				-- printh(self.v.y..","..new_vel.y)
 			elseif btn(3) then
 				new_vel.y = mid(-self.hold_topspd, self.v.y + self.hold_spd, self.hold_topspd)
 			else -- decay
@@ -450,7 +449,6 @@ c_player = c_entity:new({
 			end
 
 			local new_pos = vec2(self.p.x+new_vel.x, self.p.y+new_vel.y)
-			-- printh(abs(vdist(new_pos, self.holding_pos)))
 			if abs(vdist(new_pos, self.holding_pos)) <= self.hold_wiggle or self.on_crack then
 				v = new_vel
 			else
@@ -461,9 +459,9 @@ c_player = c_entity:new({
 			end
 		else
 			-- left/right movement
-			if btn(1) then
+			if self.movable and btn(1) then
 				self.v.x = mid(-self.topspd, self.v.x + self.spd, self.topspd)
-			elseif btn(0) then
+			elseif self.movable and btn(0) then
 				self.v.x = mid(-self.topspd, self.v.x - self.spd, self.topspd)
 			else -- decay
 				v.x *= 0.5
@@ -475,11 +473,10 @@ c_player = c_entity:new({
 					self.pass_thru_pressed_at = time()
 				end
 				self.was_pass_thru_pressed = true
-				self.squating = true
+				self.squatting = true
 			else
-
 				self.was_pass_thru_pressed = false
-				self.squating = false
+				self.squatting = false
 			end
 			self.pass_thru = time() - self.pass_thru_pressed_at > self.pass_thru_time and self.was_pass_thru_pressed
 		end
@@ -581,7 +578,7 @@ c_player = c_entity:new({
 						function(p)
 							if p.finished then
 								return "finished"
-							elseif p.squating then
+							elseif p.squatting then
 								return "squat"
 							elseif abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
 								return "walk"
@@ -675,14 +672,14 @@ c_player = c_entity:new({
 					name = "squat",
 					rules = {
 						function(p)
-							if (btn(3)) then
+							if btn(3) then
 								p.movable = false
 							else
 								p.movable = true
 							end
 							if (p.holding) return "hold"
 							if (p.v.y > 0.1) return "falling"
-							if (not p.squating) return "default"
+							if (not p.squatting) return "default"
 						end
 					}
 				},
@@ -690,6 +687,7 @@ c_player = c_entity:new({
 					name = "falling",
 					rules = {
 						function(p)
+							p.movable = true
 							if (p.finished) return "finished"
 							if (p.grounded) and p.v.y <= 4.5 then
 								local particle2 = smokepuff:new({
@@ -766,11 +764,7 @@ c_player = c_entity:new({
 		return o
 	end,
 	move = function(self)
-		if (self.movable) then
-			self:input()
-		else
-			self.v = vec2(0, 0)
-		end
+		self:input()
 		-- stamina
 		if self.stamina < self.max_stamina then
 			self.stamina_regen_cor = cocreate(self.regen_stamina)
@@ -945,24 +939,18 @@ add(classes, c_hud:new({}))
 levels = {
 	{
 		-- level 1
-		name = "test",
-		width = 2,
-		height = 3,
+		name = "v-easy",
+		width = 1,
+		height = 2,
 		next = 2,
-		face_tile = vec2(0, 1),
+		face_tile = vec2(0, 0),
 		bg = 18,
 		screens = {
 			--width
 			{
 				--height
 				vec2(1, 0),
-				vec2(1, 0),
-				vec2(0, 0)
-			},
-			{
-				vec2(1, 1),
-				vec2(1, 1),
-				vec2(0, 1)
+				vec2(0, 0),
 			}
 		}
 	},
@@ -989,7 +977,7 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 4,
-		face_tile = vec2(0, 0),
+		face_tile = vec2(14, 1),
 		bg = 19,
 		screens = {
 			--width
@@ -1012,7 +1000,7 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 5,
-		face_tile = vec2(0, 0),
+		face_tile = vec2(14, 2),
 		bg = 19,
 		screens = {
 			--width
@@ -1035,7 +1023,7 @@ levels = {
 		width = 2,
 		height = 2,
 		next = 6,
-		face_tile = vec2(0, 0),
+		face_tile = vec2(13, 0),
 		bg = 20,
 		screens = {
 			{
@@ -1054,7 +1042,7 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 7,
-		face_tile = vec2(0, 0),
+		face_tile = vec2(12, 2),
 		bg = 21,
 		screens = {
 			-- width
@@ -1076,7 +1064,7 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 1,
-		face_tile = vec2(0, 0),
+		face_tile = vec2(12, 3),
 		bg = 18,
 		screens = {
 			{
@@ -1104,20 +1092,15 @@ function load_level(level_number)
 			local screen = level.screens[x+1][y+1]
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
-				-- printh(x..","..y)
-				-- printh("screen_pos: "..screen.x..","..screen.y)
 				for sx = 0, 7 do
 					for sy = 0, 7 do
 						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
-						-- printh("mapped_pos: "..(mapped_pos.x*8)..","..(mapped_pos.y*8))
 						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
-						-- printh("world_pos: "..world_pos.x..","..world_pos.y)
 						local tile = mget(mapped_pos.x, mapped_pos.y)
 						foreach(classes, function(c)
 							load_obj(world_pos, mapped_pos, c, tile)
 						end)
 						mset(world_pos.x/8, world_pos.y/8, tile) -- divide by 8 for chunks
-						-- printh("world pos: "..(world_pos.x/8)..","..(world_pos.y/8))
 					end
 				end
 			end
@@ -1213,7 +1196,7 @@ function draw_bg(x, y, bg, is_level)
 			local world_pos = is_level and vec2(x*64 + sx*8, y*64 + sy*8 + draw_offset) or vec2(sx*8, sy*8)
 			spr(bg, world_pos.x, world_pos.y, 1, 1, rand_bool(), rand_bool())
 			if is_level then
-				spr(27, world_pos.x, world_pos.y + level.height*64, 1, 1, rand_bool(), rand_bool())
+				spr(31, world_pos.x, world_pos.y + level.height*64, 1, 1, rand_bool(), rand_bool())
 			end
 		end
 	end
@@ -1288,7 +1271,7 @@ function draw_game()
 	hud:draw()
 	--getsendy()
 	drawtransition()
-	--print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
+	-- print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
 end
 
 function init_game()
