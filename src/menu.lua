@@ -127,10 +127,13 @@ function draw_level_select()
 	local tile = levels[levelselection].face_tile
 	map(tile.x * 8, tile.y * 8)
 	-- draw level select ui
-	rectfill(0, 0, 63, 22, 7)
-	?"level: "..levelselection, 15, 1, 1
-	?"highscore", 15, 8, 1
-	?format_time(dget(levelselection)), 11, 15, 1
+	rectfill(0, 0, 63, 20, 7)
+	local level_num_str = "level: "..levelselection
+	?level_num_str, center_text(level_num_str), 1, 1
+	local level_name_str = levels[levelselection].name
+	?level_name_str, center_text(level_name_str), 8, 1
+	local highscore_str = format_time(dget(levelselection))
+	?highscore_str, center_text(highscore_str), 15, 1
 	level_arrows:draw()
 end
 

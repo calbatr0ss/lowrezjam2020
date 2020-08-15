@@ -12,3 +12,7 @@ end
 function rand_bool()
 	return flr(rnd(2)) == 1
 end
+
+function center_text(s)
+	return 33 - #s * 2
+end
