@@ -61,34 +61,9 @@ vec2_meta = {
 	end
 }
 
--- classic multiplication between 2 vectors
---[[
-function vmult(v1, v2)
-	local vec = vec2(0, 0)
-	vec.x = v1.x * v2.x
-	vec.y = v1.y * v2.y
-	return vec
-end
---]]
-
---outer product. will probably go unused in this project
---[[
-function vmult2(v1, v2)
-	local vec = vec2(0, 0)
-	vec.x = v1.x * v2.x
-	vec.y = v1.y * v2.y
-	return vec
-end
---]]
-
 function vdot(v1, v2)
 	return (v1.x * v2.x) + (v1.y * v2.y)
 end
-
---[[function vcross(v1, v2)
-	--as a 3d concept, we'll hold of on implimenting this
-	return 0
-end--]]
 
 function vmag(v)
 	local m = max(abs(v.x), abs(v.y))
@@ -411,6 +386,7 @@ c_player = c_entity:new({
 	jumped_at = 0,
 	num_jumps = 0,
 	max_jumps = 1,
+	squating = false,
 	jumping = false,
 	can_jump = true,
 	jump_delay = 0.5,
@@ -490,8 +466,11 @@ c_player = c_entity:new({
 					self.pass_thru_pressed_at = time()
 				end
 				self.was_pass_thru_pressed = true
+				self.squating = true
 			else
+
 				self.was_pass_thru_pressed = false
+				self.squating = false
 			end
 			self.pass_thru = time() - self.pass_thru_pressed_at > self.pass_thru_time and self.was_pass_thru_pressed
 		end
@@ -593,6 +572,8 @@ c_player = c_entity:new({
 						function(p)
 							if p.finished then
 								return "finished"
+							elseif p.squating then
+								return "squat"
 							elseif abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
 								return "walk"
 							elseif p.v.y > 0 and p.grounded == false then
@@ -678,6 +659,21 @@ c_player = c_entity:new({
 							if (not p.holding) return "default"
 							if (not p.holding and p.v.y < 0.0) return "falling"
 							return "shimmyy"
+						end
+					}
+				},
+				squat = {
+					name = "squat",
+					rules = {
+						function(p)
+							if (btn(3)) then
+								p.movable = false
+							else
+								p.movable = true
+							end
+							if (p.holding) return "hold"
+							if (p.v.y > 0.1) return "falling"
+							if (not p.squating) return "default"
 						end
 					}
 				},
@@ -867,6 +863,8 @@ c_player = c_entity:new({
 			number = 14
 		elseif state == "finished" then
 			number = 106
+		elseif state == "squat" then
+			number = 15
 		end
 		self.state = state
 		self.sprites.default.number = number
@@ -910,6 +908,7 @@ c_hud = c_object:new({
 			spr(49, cam.pos.x + 55 + self.hando.x, cam.pos.y + self.hando.y)
 		end
 		if (player.has_chalk) spr(58, cam.pos.x + 55, cam.pos.y+55)
+		if (player.finished) getsendy()
 	end,
 	shakehand = function(self)
 		self.hando = vec2(0, 0)
@@ -1136,6 +1135,7 @@ function clear_state()
 		player.sprites.default.number = 1
 	end
 	player = nil
+	toprope = nil
 end
 
 function load_obj(w_pos, m_pos, class, tile)
@@ -1276,6 +1276,7 @@ function draw_game()
 	--drawtrees()
 	cam:update(player.p)
 	hud:draw()
+	--getsendy()
 	drawtransition()
 	--print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
 end
@@ -1357,7 +1358,7 @@ c_goal = c_object:new({
 		while time() < reloadtime do
 			yield()
 		end
-		if (musicoff) jukebox:stopplaying()
+		if (music_on == "off") jukebox:stopplaying()
 		if not level.next then
 			-- todo: no next level selected... beat the game?
 		end
@@ -1419,5 +1420,20 @@ function drawtransition()
 		cam.pos.y + transitionbox[1].y,
 		cam.pos.x + transitionbox[2].x,
 		cam.pos.y + transitionbox[2].y, 0)
+	end
+end
+
+function getsendy()
+	for i = 0, #"let's get sendy" + 1, 1 do
+		local sinval = flr(sin(time()-i/8)*-1.5)
+		circfill(cam.pos.x+i*4, cam.pos.y+12+sinval, 5, 7)
+	end
+	for i = 0, #"let's get sendy", 1	do
+		local sinval = flr(sin(time()-i/8)*-1.5)
+		print(sub("let's get sendy!",i,i), cam.pos.x+i*4-2,cam.pos.y+10+sinval,1)
+	end
+	if (formatted_time != nil) then
+		rectfill(cam.pos.x + (31-#formatted_time*2), cam.pos.y + 23, cam.pos.x + (33+#formatted_time*2), cam.pos.y + 31, 7)
+		print(formatted_time, cam.pos.x + (33-#formatted_time*2), cam.pos.y + 25, 1)
 	end
 end

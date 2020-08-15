@@ -168,9 +168,9 @@ rope = {
 			add(self.struts, strut)
 		end
 		self.struts[1].ends[1].p = player.p
-		self.struts[#self.struts].ends[2].p = cam.pos + self.o
+		--self.struts[#self.struts].ends[2].p = cam.pos + self.o
 		self.struts[1].ideal = 0.1
-		self.struts[#self.struts].ideal = 0.1
+		--self.struts[#self.struts].ideal = 0.1
 	end,
 	solve = function(self)
 		self.time = 0
@@ -183,10 +183,10 @@ rope = {
 			send1.p = send1.p + (send1.v * send1.dt)
 			send2.p = send2.p + (send2.v * send2.dt)
 		end
-		struts[1].ends[1].p = player.p + vec2(4, 5)
-		struts[#struts].ends[2].p = cam.pos + self.o
+		struts[1].ends[1].p = player.p + vec2(2, 5)
+		--struts[#struts].ends[2].p = cam.pos + self.o
 		struts[1].ends[1].v = player.v
-		struts[#struts].ends[2].v = vec2(0, 0)
+		--struts[#struts].ends[2].v = vec2(0, 0)
 		-- position based forces are then applied
 		for i = 1, #struts, 1 do
 			send1, send2 = struts[i].ends[1], struts[i].ends[2]
@@ -194,7 +194,7 @@ rope = {
 			send1.f += strutforces
 			send2.f -= strutforces
 			-- send1.f += (vec2(0, send1.g) * send1.m)
-			send2.f += (vec2(0, send1.g) * send1.m)
+			-- send2.f += (vec2(0, send1.g) * send1.m)
 		end
 		-- finally, velocities are calculated
 		for i = 1, #struts, 1 do
@@ -206,7 +206,7 @@ rope = {
 			struts[i].ends[1], struts[i].ends[2] = send1, send2
 		end
 		struts[1].ends[1].p = player.p + vec2(4, 5)
-		struts[#struts].ends[2].p = cam.pos + self.o
+		--struts[#struts].ends[2].p = cam.pos + self.o
 		self.struts = struts
 	end,
 	draw = function(self)
@@ -226,12 +226,14 @@ rope = {
 	create = function(self)
 		local v = {}
 		local offset = vec2(32, -20)
-		for i = 1, 10, 1 do
+		for i = 1, 5, 1 do
 			add(v, c_particle:new({
-				p = player.p - ((cam.pos + offset) * (i * 0.05)),
-				v = cam.pos + vec2(32, -20),
-				g = 9.8,
-				damp = 1,
+				--p = player.p - ((cam.pos + offset) * (i * 0.05)),
+				p = player.p + vec2(i, 0),
+				--v = cam.pos + vec2(32, -20),
+				v = vec2(0, 0),
+				g = 25,
+				damp = 0.5,
 				m = 1,
 				c = 9,
 				f = vec2(0, 0),
@@ -240,8 +242,8 @@ rope = {
 		end
 		local r = rope:new({
 			verts = v,
-			ks = 10,
-			kd = 2,
+			ks = 15,
+			kd = 3,
 			ideal = 0.1,
 			o = offset
 		})
