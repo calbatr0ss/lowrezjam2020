@@ -942,6 +942,7 @@ c_hud = c_object:new({
 add(classes, c_hud:new({}))
 
 tombstone = vec2(-1, -1)
+-- levels can be max 4 height due to our draw space
 levels = {
 	-- level 1
 	{
@@ -1080,23 +1081,23 @@ levels = {
 	},
 	-- level 8
 	{
-		name = "crimpy!",
-		face_tile = vec2(12, 3),
-		bg = 18,
+		name = "crimp n' co.",
+		face_tile = vec2(4, 0),
+		bg = 23,
 		screens = {
 			-- width
 			{
 				-- height
 				tombstone,
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(7, 0),
+				vec2(5, 0),
+				vec2(4, 0)
 			},
 			{
 				tombstone,
-				tombstone,
-				tombstone,
-				vec2(13, 3)
+				vec2(6, 0),
+				vec2(3, 0),
+				vec2(2, 0)
 			}
 		}
 	},
