@@ -107,6 +107,7 @@ function init_level_select()
 		pos = vec2(0, 0),
 		y = 1,
 		act = function(direction)
+			sfx(10, -1, 0, 5)
 			if direction == "left" then
 				levelselection = mid(1, levelselection - 1, #levels)
 			else

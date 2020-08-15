@@ -31,6 +31,7 @@ start_time = 0
 level_loaded = false
 end_time = 0
 musicoff = false
+resetbuttonpressed = false
 
 --vector functions (turns out order matters)
 function vec2(x, y)
@@ -1194,7 +1195,6 @@ function load_level(level_number)
 			end
 		end
 	end
-	start_time = time()
 end
 
 function save_highscore(score)
@@ -1373,6 +1373,7 @@ function init_game()
 		tran = cocreate(transition)
 		add(coroutines, tran)
 	end
+	if ((not level_loaded and not player.dead) or resetbuttonpressed) start_time = time()
 	level_loaded = true
 	--player.movable = true
 	hud = c_hud:new({})
@@ -1387,20 +1388,26 @@ function init_game()
 		add(coroutines, flock)
 	end
 	menuitem(2, "back to menu", init_menu)
-	menuitem(1, "reload level", respawn)
+	menuitem(1, "reload level", timereset)
 	--jukebox:startplayingnow(3, 2000, 11)
+end
+
+function timereset()
+	resetbuttonpressed, player.dead = true, false
+	respawn()
 end
 
 function respawn()
 	if not player.finished then
-		player.v = vec2(0, 0)
+		--player.v = vec2(0, 0)
 		local respawntimer = time() + 1
 		while time() < respawntimer and player.dead do
 			yield()
 		end
-		player.dead = false
+		--if (player and not player.dead) start_time = time()
 		clear_state()
 		init_game()
+		player.dead = false
 		for i = 1, 10, 1 do
 			local o = player.p + vec2(sin(10/i) * 10 - 4, cos(10/i) * 10 - 4)
 			local p = c_particle:new({p = player.p + vec2(sin(10/i) * 15, cos(10/i) * 15), v = (player.p-o)*5, life = 10, c = 14})
@@ -1408,6 +1415,8 @@ function respawn()
 		end
 		sfx(12, 3)
 		player.movable = true
+		player.v = vec2(0, 0)
+		resetbuttonpressed = false
 	end
 end
 
