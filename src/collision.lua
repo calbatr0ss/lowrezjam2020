@@ -36,8 +36,8 @@ end
 
 function ledge_below(obj)
 	local edges = calc_edges(obj)
-	return (ledge_tile(edges.l, edges.b+7) and not ledge_tile(edges.l, edges.b-1)) or
-		(ledge_tile(edges.r, edges.b+7) and not ledge_tile(edges.r, edges.b-1))
+	return (ledge_tile(edges.l, edges.b+8) and not ledge_tile(edges.l, edges.b)) or
+		(ledge_tile(edges.r, edges.b+8) and not ledge_tile(edges.r, edges.b))
 end
 
 function calc_edges(obj)

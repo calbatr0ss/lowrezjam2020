@@ -208,23 +208,24 @@ c_object = c_sprite:new({
 	pass_thru_pressed_at = 0,
 	was_pass_thru_held = false,
 	pass_thru_time = 0.2,
+	gonna_hit_ledge = false,
 	move = function(self)
-		local p = self.p
-		local v = self.v
+		local p, v = self.p, self.v
 		p.y += v.y
 		while ceil_tile_collide(self) do p.y += 1 end
 		while floor_tile_collide(self) do p.y -= 1 end
-		-- if ceil_tile_collide(self) then self.p.y += 1 end
-		-- if floor_tile_collide(self) then self.p.y -= 1 end
-		if self.v.y >= 0 and not self.pass_thru and ledge_below(self) then
-			while floor_ledge_collide(self) do self.p.y -= 1 end
+
+		if v.y >= 0 and not self.pass_thru and (ledge_below(self) or self.gonna_hit_ledge) then
+			-- we know we're about to hit a ledge so we need to re-enter this condition next frame
+			self.gonna_hit_ledge = true
+			while floor_ledge_collide(self) do p.y -= 1 end
+		else
+			self.gonna_hit_ledge = false
 		end
 
 		p.x += v.x
 		while right_tile_collide(self) do p.x -= 1 end
 		while left_tile_collide(self) do p.x += 1 end
-		-- if right_tile_collide(self) then self.p.x -= 1 end
-		-- if left_tile_collide(self) then self.p.x += 1 end
 
 		-- keep inside level boundary
 		while calc_edges(self).l < 0 do p.x += 1 end
@@ -233,7 +234,7 @@ c_object = c_sprite:new({
 		if floor_tile_collide(self) then
 			p.y = flr(p.y) -- prevent visually stuck in ground
 		end
-		self.grounded = on_ground(self) or (on_ledge(self) and not self.pass_thru and self.v.y >= 0)
+		self.grounded = on_ground(self) or (on_ledge(self) and not self.pass_thru and v.y >= 0)
 		-- sprite orientation
 		if v.x > 0 then self.flip = false
 		elseif v.x < 0 then self.flip = true end
@@ -940,28 +941,19 @@ levels = {
 		height = 3,
 		next = 2,
 		face_tile = vec2(0, 1),
+		bg = 18,
 		screens = {
 			--width
 			{
 				--height
-				dim = {
-					vec2(1, 0),
-					vec2(1, 0),
-					vec2(0, 0)
-				},
-				bg = {
-					sprite = 18
-				}
+				vec2(1, 0),
+				vec2(1, 0),
+				vec2(0, 0)
 			},
 			{
-				dim = {
-					vec2(1, 1),
-					vec2(1, 1),
-					vec2(0, 1)
-				},
-				bg = {
-					sprite = 18
-				}
+				vec2(1, 1),
+				vec2(1, 1),
+				vec2(0, 1)
 			}
 		}
 	},
@@ -972,17 +964,13 @@ levels = {
 		height = 2,
 		next = 3,
 		face_tile = vec2(0, 2),
+		bg = 19,
 		screens = {
 			--width
 			{
 				--height
-				dim = {
-					vec2(-1, -1),
-					vec2(0, 2)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(0, 2)
 			}
 		}
 	},
@@ -992,28 +980,20 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 4,
+		face_tile = vec2(0, 0),
+		bg = 19,
 		screens = {
 			--width
 			{
 				--height
-				dim = {
-					vec2(-1, -1),
-					vec2(14, 1),
-					vec2(14, 0)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(14, 1),
+				vec2(14, 0)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(15, 1),
-					vec2(14, 0)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(15, 1),
+				vec2(14, 0)
 			}
 		}
 	},
@@ -1023,28 +1003,20 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 5,
+		face_tile = vec2(0, 0),
+		bg = 19,
 		screens = {
 			--width
 			{
 				--height
-				dim = {
-					vec2(-1, -1),
-					vec2(14, 2),
-					vec2(14, 3)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(14, 2),
+				vec2(14, 3)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(15, 2),
-					vec2(15, 3)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(15, 2),
+				vec2(15, 3)
 			}
 		}
 	},
@@ -1054,24 +1026,16 @@ levels = {
 		width = 2,
 		height = 2,
 		next = 6,
+		face_tile = vec2(0, 0),
+		bg = 20,
 		screens = {
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(13, 0)
-				},
-				bg = {
-					sprite = 20
-				}
+				vec2(-1, -1),
+				vec2(13, 0)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(15, 0)
-				},
-				bg = {
-					sprite = 20
-				}
+				vec2(-1, -1),
+				vec2(15, 0)
 			}
 		}
 	},
@@ -1081,28 +1045,20 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 7,
+		face_tile = vec2(0, 0),
+		bg = 21,
 		screens = {
-			--Width
+			-- width
 			{
-				--Height
-				dim = {
-					vec2(-1, -1),
-					vec2(12, 1),
-					vec2(12, 2)
-				},
-				bg = {
-					sprite = 21
-				}
+				-- height
+				vec2(-1, -1),
+				vec2(12, 1),
+				vec2(12, 2)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(13, 1),
-					vec2(13, 2)
-				},
-				bg = {
-					sprite = 21
-				}
+				vec2(-1, -1),
+				vec2(13, 1),
+				vec2(13, 2)
 			}
 		}
 	},
@@ -1111,32 +1067,24 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 1,
+		face_tile = vec2(0, 0),
+		bg = 18,
 		screens = {
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(12, 0),
-					vec2(12, 3)
-				},
-				bg = {
-					sprite = 18
-				}
+				vec2(-1, -1),
+				vec2(12, 0),
+				vec2(12, 3)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(-1, -1),
-					vec2(13, 3)
-				},
-				bg = {
-					sprite = 18
-				}
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(13, 3)
 			}
 		}
 	}
 }
 level = nil
-draw_offset = 32*8
+draw_offset = 256
 
 function load_level(level_number)
 	reload_map()
@@ -1144,7 +1092,7 @@ function load_level(level_number)
 	level = levels[level_number]
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
-			local screen = level.screens[x+1].dim[y+1]
+			local screen = level.screens[x+1][y+1]
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
 				-- printh(x..","..y)
@@ -1167,16 +1115,6 @@ function load_level(level_number)
 		end
 	end
 	start_time = time()
-end
-
-function finish_level()
-	end_time = time()
-
-	local score = end_time - start_time
-	formatted_time = format_time(score)
-	printh("time taken "..formatted_time)
-
-	save_highscore(score)
 end
 
 function save_highscore(score)
@@ -1204,18 +1142,19 @@ function load_obj(w_pos, m_pos, class, tile)
 	local sprite = class.sprites.default.number
 	if sprite == tile then
 		if class.name == "granola" then
-			add(actors, class:new({p = w_pos, map_pos = m_pos}))
+			add(actors, class:new({ p = w_pos, map_pos = m_pos }))
 		elseif class.name == "chalk" then
-			add(actors, class:new({p = w_pos, map_pos = m_pos}))
+			add(actors, class:new({ p = w_pos, map_pos = m_pos }))
 		elseif class.name == "chalkhold" then
 			-- todo: fix chalkholds?
-			add(actors, class:new({p = w_pos}))
+			add(actors, class:new({ p = w_pos }))
 			mset(m_pos.x, m_pos.y, 0)
 		elseif class.name == "player" then
-			player = class:new({p = w_pos})
+			player = class:new({ p = w_pos })
 			mset(m_pos.x, m_pos.y, 0)
+			cam.pos = vec2(w_pos.x, w_pos.y) -- copy world_pos to avoid reference issues
 		elseif class.name == "goal" then
-			add(actors, class:new({p = w_pos}))
+			add(actors, class:new({ p = w_pos }))
 			mset(m_pos.x, m_pos.y, 0)
 		end
 	end
@@ -1244,21 +1183,27 @@ function draw_level()
 	end
 
 	--draw the elements in the level
-	srand(800)
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
-			local screen, bg = level.screens[x+1].dim[y+1], level.screens[x+1].bg
-			-- draw bg
-			for sx = 0, 7 do
-				for sy = 0, 7 do
-					local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
-					spr(bg.sprite, world_pos.x, world_pos.y, 1, 1, rand_bool(), rand_bool())
-					spr(27, world_pos.x, world_pos.y + level.height * 64, 1, 1, rand_bool(), rand_bool())
-				end
-			end
+			local screen = level.screens[x+1][y+1]
+			draw_bg(x, y, level.bg, true)
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
 				map(screen.x*8, screen.y*8, x*64, y*64+draw_offset, 8, 8)
+			end
+		end
+	end
+end
+
+-- is_level accounts for draw_offset and ground tiles below level height
+function draw_bg(x, y, bg, is_level)
+	srand(800)
+	for sx = 0, 7 do
+		for sy = 0, 7 do
+			local world_pos = is_level and vec2(x*64 + sx*8, y*64 + sy*8 + draw_offset) or vec2(sx*8, sy*8)
+			spr(bg, world_pos.x, world_pos.y, 1, 1, rand_bool(), rand_bool())
+			if is_level then
+				spr(27, world_pos.x, world_pos.y + level.height*64, 1, 1, rand_bool(), rand_bool())
 			end
 		end
 	end
@@ -1275,7 +1220,7 @@ end
 function reload_map()
 	reload(0x2000, 0x2000, 0x1000)
 	setup()
-	-- todo: does this work like i think it does?
+	-- clear the draw space
 	for x = 0, 63 do
 		for y = 32, 63 do
 			mset(x, y, 0)
@@ -1404,7 +1349,7 @@ c_goal = c_object:new({
 		})
 	},
 	next_level = function(self)
-		finish_level()
+		save_highscore(time() - start_time)
 		-- todo: add coroutine for an end of level anim
 		local reloadtime = time() + 5
 		jukebox.playing = true
@@ -1417,7 +1362,6 @@ c_goal = c_object:new({
 		if not level.next then
 			-- todo: no next level selected... beat the game?
 		end
-		--clear_state()
 		levelselection = level.next
 		for i = 64, 1, -5 do
 			transitionbox = {vec2(i, 0), vec2(64, 64)}
