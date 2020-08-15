@@ -940,6 +940,7 @@ c_hud = c_object:new({
 })
 add(classes, c_hud:new({}))
 
+tombstone = vec2(-1, -1)
 levels = {
 	-- level 1
 	{
@@ -950,8 +951,9 @@ levels = {
 			--width
 			{
 				--height
+				tombstone,
 				vec2(1, 0),
-				vec2(0, 0),
+				vec2(0, 0)
 			}
 		}
 	},
@@ -986,12 +988,12 @@ levels = {
 			--width
 			{
 				--height
-				vec2(-1, -1),
+				tombstone,
 				vec2(14, 1),
 				vec2(14, 0)
 			},
 			{
-				vec2(-1, -1),
+				tombstone,
 				vec2(15, 1),
 				vec2(14, 0)
 			}
@@ -1006,12 +1008,12 @@ levels = {
 			--width
 			{
 				--height
-				vec2(-1, -1),
+				tombstone,
 				vec2(14, 2),
 				vec2(14, 3)
 			},
 			{
-				vec2(-1, -1),
+				tombstone,
 				vec2(15, 2),
 				vec2(15, 3)
 			}
@@ -1026,11 +1028,11 @@ levels = {
 			-- width
 			{
 				-- height
-				vec2(-1, -1),
+				tombstone,
 				vec2(13, 0)
 			},
 			{
-				vec2(-1, -1),
+				tombstone,
 				vec2(15, 0)
 			}
 		}
@@ -1044,12 +1046,12 @@ levels = {
 			-- width
 			{
 				-- height
-				vec2(-1, -1),
+				tombstone,
 				vec2(12, 1),
 				vec2(12, 2)
 			},
 			{
-				vec2(-1, -1),
+				tombstone,
 				vec2(13, 1),
 				vec2(13, 2)
 			}
@@ -1064,13 +1066,13 @@ levels = {
 			-- width
 			{
 				-- height
-				vec2(-1, -1),
+				tombstone,
 				vec2(12, 0),
 				vec2(12, 3)
 			},
 			{
-				vec2(-1, -1),
-				vec2(-1, -1),
+				tombstone,
+				tombstone,
 				vec2(13, 3)
 			}
 		}
@@ -1084,15 +1086,15 @@ levels = {
 			-- width
 			{
 				-- height
-				vec2(-1, -1),
+				tombstone,
 				vec2(12, 0),
 				vec2(12, 3),
 				vec2(12, 3)
 			},
 			{
-				vec2(-1, -1),
-				vec2(-1, -1),
-				vec2(-1, -1),
+				tombstone,
+				tombstone,
+				tombstone,
 				vec2(13, 3)
 			}
 		}
@@ -1106,15 +1108,15 @@ levels = {
 			-- width
 			{
 				-- height
-				vec2(-1, -1),
+				tombstone,
 				vec2(12, 0),
 				vec2(12, 3),
 				vec2(12, 3)
 			},
 			{
-				vec2(-1, -1),
-				vec2(-1, -1),
-				vec2(-1, -1),
+				tombstone,
+				tombstone,
+				tombstone,
 				vec2(13, 3)
 			}
 		}
@@ -1128,15 +1130,15 @@ levels = {
 			-- width
 			{
 				-- height
-				vec2(-1, -1),
+				tombstone,
 				vec2(12, 0),
 				vec2(12, 3),
 				vec2(12, 3)
 			},
 			{
-				vec2(-1, -1),
-				vec2(-1, -1),
-				vec2(-1, -1),
+				tombstone,
+				tombstone,
+				tombstone,
 				vec2(13, 3)
 			}
 		}
@@ -1150,15 +1152,15 @@ levels = {
 			-- width
 			{
 				-- height
-				vec2(-1, -1),
+				tombstone,
 				vec2(12, 0),
 				vec2(12, 3),
 				vec2(12, 3)
 			},
 			{
-				vec2(-1, -1),
-				vec2(-1, -1),
-				vec2(-1, -1),
+				tombstone,
+				tombstone,
+				tombstone,
 				vec2(13, 3)
 			}
 		}
