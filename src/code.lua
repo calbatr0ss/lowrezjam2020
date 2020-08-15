@@ -230,7 +230,8 @@ c_object = c_sprite:new({
 
 		-- keep inside level boundary
 		while calc_edges(self).l < 0 do p.x += 1 end
-		while calc_edges(self).r > level.width*64 do p.x -= 1 end
+		local level_width = #level.screens
+		while calc_edges(self).r > level_width*64 do p.x -= 1 end
 
 		if floor_tile_collide(self) then
 			p.y = flr(p.y) -- prevent visually stuck in ground
@@ -642,6 +643,7 @@ c_player = c_entity:new({
 					name = "finished",
 					rules = {
 						function(p)
+							p.movable = false
 							return "finished"
 						end
 					}
@@ -939,12 +941,9 @@ c_hud = c_object:new({
 add(classes, c_hud:new({}))
 
 levels = {
+	-- level 1
 	{
-		-- level 1
 		name = "v-easy",
-		width = 1,
-		height = 2,
-		next = 2,
 		face_tile = vec2(0, 0),
 		bg = 18,
 		screens = {
@@ -956,29 +955,31 @@ levels = {
 			}
 		}
 	},
+	-- level 2
 	{
-		-- level 2
-		name = "approach",
-		width = 1,
-		height = 2,
-		next = 3,
-		face_tile = vec2(0, 2),
-		bg = 19,
+		name = "traverse",
+		face_tile = vec2(1, 2),
+		bg = 21,
 		screens = {
 			--width
 			{
 				--height
-				vec2(-1, -1),
+				vec2(0, 3),
 				vec2(0, 2)
+			},
+			{
+				vec2(2, 3),
+				vec2(1, 3)
+			},
+			{
+				vec2(2, 2),
+				vec2(1, 2)
 			}
 		}
 	},
+	-- level 3
 	{
-		-- level 3
 		name = "gap",
-		width = 2,
-		height = 3,
-		next = 4,
 		face_tile = vec2(14, 1),
 		bg = 19,
 		screens = {
@@ -996,12 +997,9 @@ levels = {
 			}
 		}
 	},
+	-- level 4
 	{
-		-- level 4
 		name = "drop",
-		width = 2,
-		height = 3,
-		next = 5,
 		face_tile = vec2(14, 2),
 		bg = 19,
 		screens = {
@@ -1022,13 +1020,12 @@ levels = {
 	-- level 5
 	{
 		name = "chalk",
-		width = 2,
-		height = 2,
-		next = 6,
 		face_tile = vec2(13, 0),
 		bg = 20,
 		screens = {
+			-- width
 			{
+				-- height
 				vec2(-1, -1),
 				vec2(13, 0)
 			},
@@ -1038,12 +1035,9 @@ levels = {
 			}
 		}
 	},
-	--Level 6
+	-- level 6
 	{
 		name = "climbers",
-		width = 2,
-		height = 3,
-		next = 7,
 		face_tile = vec2(12, 2),
 		bg = 21,
 		screens = {
@@ -1061,20 +1055,108 @@ levels = {
 			}
 		}
 	},
+	-- level 7
 	{
 		name = "cracks",
-		width = 2,
-		height = 3,
-		next = 1,
 		face_tile = vec2(12, 3),
 		bg = 18,
 		screens = {
+			-- width
 			{
+				-- height
 				vec2(-1, -1),
 				vec2(12, 0),
 				vec2(12, 3)
 			},
 			{
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(13, 3)
+			}
+		}
+	},
+	-- level 8
+	{
+		name = "crimpy!",
+		face_tile = vec2(12, 3),
+		bg = 18,
+		screens = {
+			-- width
+			{
+				-- height
+				vec2(-1, -1),
+				vec2(12, 0),
+				vec2(12, 3),
+				vec2(12, 3)
+			},
+			{
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(13, 3)
+			}
+		}
+	},
+	-- level 9
+	{
+		name = "crimpy!",
+		face_tile = vec2(12, 3),
+		bg = 18,
+		screens = {
+			-- width
+			{
+				-- height
+				vec2(-1, -1),
+				vec2(12, 0),
+				vec2(12, 3),
+				vec2(12, 3)
+			},
+			{
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(13, 3)
+			}
+		}
+	},
+	-- level 10
+	{
+		name = "crimpy!",
+		face_tile = vec2(12, 3),
+		bg = 18,
+		screens = {
+			-- width
+			{
+				-- height
+				vec2(-1, -1),
+				vec2(12, 0),
+				vec2(12, 3),
+				vec2(12, 3)
+			},
+			{
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(13, 3)
+			}
+		}
+	},
+	-- level 11
+	{
+		name = "crimpy!",
+		face_tile = vec2(12, 3),
+		bg = 18,
+		screens = {
+			-- width
+			{
+				-- height
+				vec2(-1, -1),
+				vec2(12, 0),
+				vec2(12, 3),
+				vec2(12, 3)
+			},
+			{
+				vec2(-1, -1),
 				vec2(-1, -1),
 				vec2(-1, -1),
 				vec2(13, 3)
@@ -1089,8 +1171,10 @@ function load_level(level_number)
 	reload_map()
 	jukebox:startplayingnow(level_number%2+3, 3000, 11)
 	level = levels[level_number]
-	for x = 0, level.width - 1 do
-		for y = 0, level.height - 1 do
+	local level_width = #level.screens
+	local level_height = #level.screens[1]
+	for x = 0, level_width - 1 do
+		for y = 0, level_height - 1 do
 			local screen = level.screens[x+1][y+1]
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
@@ -1157,10 +1241,10 @@ end
 
 function draw_leaves()
 	--draw the sides of the level
-	for y = 0, level.height - 1 do
+	for y = 0, #level.screens[1] - 1 do
 		for i = 0, 7 do
 			yo = y*64+i*8+draw_offset
-			spr(72, level.width * 64 - 8, yo, 1, 1, false, rand_bool())
+			spr(72, #level.screens * 64 - 8, yo, 1, 1, false, rand_bool())
 			spr(72, 0, yo, 1, 1, true, rand_bool())
 		end
 	end
@@ -1178,8 +1262,10 @@ function draw_level()
 	end
 
 	--draw the elements in the level
-	for x = 0, level.width - 1 do
-		for y = 0, level.height - 1 do
+	local level_width = #level.screens
+	local level_height = #level.screens[1]
+	for x = 0, level_width - 1 do
+		for y = 0, level_height - 1 do
 			local screen = level.screens[x+1][y+1]
 			draw_bg(x, y, level.bg, true)
 			-- ignore screens set to tombstone vector vec2(-1, -1)
@@ -1198,7 +1284,7 @@ function draw_bg(x, y, bg, is_level)
 			local world_pos = is_level and vec2(x*64 + sx*8, y*64 + sy*8 + draw_offset) or vec2(sx*8, sy*8)
 			spr(bg, world_pos.x, world_pos.y, 1, 1, rand_bool(), rand_bool())
 			if is_level then
-				spr(31, world_pos.x, world_pos.y + level.height*64, 1, 1, rand_bool(), rand_bool())
+				spr(31, world_pos.x, world_pos.y + #level.screens[1]*64, 1, 1, rand_bool(), rand_bool())
 			end
 		end
 	end
@@ -1235,7 +1321,6 @@ function update_game()
 	local hold = player:hold_collide()
 	-- reset player holds to check again on next loop
 	player.on_jug, player.on_crack, player.on_crimp = false, false, false
-	-- player.on_jug = hold == "jug" -- this syntax saves tokens, but at what cost?
 	if hold == "jug" then
 		player.on_jug = true
 	elseif hold == "crack" then
@@ -1260,15 +1345,12 @@ end
 
 function draw_game()
 	cls()
-	--testtiles()
-	-- testanimation()
 	draw_level(levelselection)
 	foreach(actors, function(a) a:draw() end)
 	toprope:drawrope()
 	player:draw()
 	draw_leaves()
 	drawparticles()
-	--drawtrees()
 	cam:update(player.p)
 	hud:draw()
 	--getsendy()
@@ -1356,10 +1438,12 @@ c_goal = c_object:new({
 			yield()
 		end
 		if (music_on == "off") jukebox:stopplaying()
-		if not level.next then
-			-- todo: no next level selected... beat the game?
+
+		if levelselection == #levels+1 then
+			-- todo: go to credits/main menu
+			printh("done")
 		end
-		levelselection = level.next
+		levelselection += 1
 		for i = 64, 1, -5 do
 			transitionbox = {vec2(i, 0), vec2(64, 64)}
 			yield()
@@ -1386,8 +1470,8 @@ function spawnflock()
 				add(particles, s_particle:new({fo = flr(rnd(4)),
 				sprites = {45, 46, 47},
 				life = 500,
-				p = vec2(level.width*64 + 64 +(rnd(5)-10),
-				level.height * 110+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
+				p = vec2(#level.screens*64 + 64 +(rnd(5)-10),
+					#level.screens[1] * 110+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
 				v = vec2(-50, 0)}))
 			end
 		end
