@@ -582,6 +582,8 @@ c_player = c_entity:new({
 						function(p)
 							if p.finished then
 								return "finished"
+							elseif p.holding then
+								return "hold"
 							elseif p.squatting then
 								return "squat"
 							elseif abs(p.v.x) > 0.01 and p.holding == false and p.grounded == true then
