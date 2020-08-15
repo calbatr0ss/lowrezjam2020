@@ -85,7 +85,7 @@ function update_menu()
 end
 
 function draw_menu()
-	drawnoodles(20)
+	draw_bg(0, 0, 20)
 	spr(1, 45, 0, 1, 1, true, true)
 	rectfill(10, 15, 53, 58, 15)
 	?"levels", 15, 20, 1
@@ -122,13 +122,7 @@ end
 function draw_level_select()
 	cls()
 	-- draw background
-	local sprite = levels[levelselection].screens[1].bg.sprite
-	srand(800)
-	for x = 0, 7 do
-		for y = 0, 7 do
-			spr(sprite, x*8, y*8, 1, 1, rand_bool(), rand_bool())
-		end
-	end
+	draw_bg(0, 0, levels[levelselection].bg)
 	-- draw map face tile
 	local tile = levels[levelselection].face_tile
 	map(tile.x * 8, tile.y * 8)
@@ -154,7 +148,7 @@ end
 
 function draw_credits()
 	cls()
-	drawnoodles(21)
+	draw_bg(0, 0, 21)
 	rectfill(0, 5, 64, 26, 15)
 	rectfill(0, 36, 64, 55, 15)
 	?"a hot beans game:", 0, 5, 1

@@ -941,28 +941,19 @@ levels = {
 		height = 3,
 		next = 2,
 		face_tile = vec2(0, 1),
+		bg = 18,
 		screens = {
 			--width
 			{
 				--height
-				dim = {
-					vec2(1, 0),
-					vec2(1, 0),
-					vec2(0, 0)
-				},
-				bg = {
-					sprite = 18
-				}
+				vec2(1, 0),
+				vec2(1, 0),
+				vec2(0, 0)
 			},
 			{
-				dim = {
-					vec2(1, 1),
-					vec2(1, 1),
-					vec2(0, 1)
-				},
-				bg = {
-					sprite = 18
-				}
+				vec2(1, 1),
+				vec2(1, 1),
+				vec2(0, 1)
 			}
 		}
 	},
@@ -973,17 +964,13 @@ levels = {
 		height = 2,
 		next = 3,
 		face_tile = vec2(0, 2),
+		bg = 19,
 		screens = {
 			--width
 			{
 				--height
-				dim = {
-					vec2(-1, -1),
-					vec2(0, 2)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(0, 2)
 			}
 		}
 	},
@@ -993,28 +980,20 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 4,
+		face_tile = vec2(0, 0),
+		bg = 19,
 		screens = {
 			--width
 			{
 				--height
-				dim = {
-					vec2(-1, -1),
-					vec2(14, 1),
-					vec2(14, 0)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(14, 1),
+				vec2(14, 0)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(15, 1),
-					vec2(14, 0)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(15, 1),
+				vec2(14, 0)
 			}
 		}
 	},
@@ -1024,28 +1003,20 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 5,
+		face_tile = vec2(0, 0),
+		bg = 19,
 		screens = {
 			--width
 			{
 				--height
-				dim = {
-					vec2(-1, -1),
-					vec2(14, 2),
-					vec2(14, 3)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(14, 2),
+				vec2(14, 3)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(15, 2),
-					vec2(15, 3)
-				},
-				bg = {
-					sprite = 19
-				}
+				vec2(-1, -1),
+				vec2(15, 2),
+				vec2(15, 3)
 			}
 		}
 	},
@@ -1055,24 +1026,16 @@ levels = {
 		width = 2,
 		height = 2,
 		next = 6,
+		face_tile = vec2(0, 0),
+		bg = 20,
 		screens = {
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(13, 0)
-				},
-				bg = {
-					sprite = 20
-				}
+				vec2(-1, -1),
+				vec2(13, 0)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(15, 0)
-				},
-				bg = {
-					sprite = 20
-				}
+				vec2(-1, -1),
+				vec2(15, 0)
 			}
 		}
 	},
@@ -1082,28 +1045,20 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 7,
+		face_tile = vec2(0, 0),
+		bg = 21,
 		screens = {
-			--Width
+			-- width
 			{
-				--Height
-				dim = {
-					vec2(-1, -1),
-					vec2(12, 1),
-					vec2(12, 2)
-				},
-				bg = {
-					sprite = 21
-				}
+				-- height
+				vec2(-1, -1),
+				vec2(12, 1),
+				vec2(12, 2)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(13, 1),
-					vec2(13, 2)
-				},
-				bg = {
-					sprite = 21
-				}
+				vec2(-1, -1),
+				vec2(13, 1),
+				vec2(13, 2)
 			}
 		}
 	},
@@ -1112,32 +1067,24 @@ levels = {
 		width = 2,
 		height = 3,
 		next = 1,
+		face_tile = vec2(0, 0),
+		bg = 18,
 		screens = {
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(12, 0),
-					vec2(12, 3)
-				},
-				bg = {
-					sprite = 18
-				}
+				vec2(-1, -1),
+				vec2(12, 0),
+				vec2(12, 3)
 			},
 			{
-				dim = {
-					vec2(-1, -1),
-					vec2(-1, -1),
-					vec2(13, 3)
-				},
-				bg = {
-					sprite = 18
-				}
+				vec2(-1, -1),
+				vec2(-1, -1),
+				vec2(13, 3)
 			}
 		}
 	}
 }
 level = nil
-draw_offset = 32*8
+draw_offset = 256
 
 function load_level(level_number)
 	reload_map()
@@ -1145,7 +1092,7 @@ function load_level(level_number)
 	level = levels[level_number]
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
-			local screen = level.screens[x+1].dim[y+1]
+			local screen = level.screens[x+1][y+1]
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
 				-- printh(x..","..y)
@@ -1244,21 +1191,27 @@ function draw_level()
 	end
 
 	--draw the elements in the level
-	srand(800)
 	for x = 0, level.width - 1 do
 		for y = 0, level.height - 1 do
-			local screen, bg = level.screens[x+1].dim[y+1], level.screens[x+1].bg
-			-- draw bg
-			for sx = 0, 7 do
-				for sy = 0, 7 do
-					local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
-					spr(bg.sprite, world_pos.x, world_pos.y, 1, 1, rand_bool(), rand_bool())
-					spr(27, world_pos.x, world_pos.y + level.height * 64, 1, 1, rand_bool(), rand_bool())
-				end
-			end
+			local screen = level.screens[x+1][y+1]
+			draw_bg(x, y, level.bg, true)
 			-- ignore screens set to tombstone vector vec2(-1, -1)
 			if screen.x >= 0 and screen.y >= 0 then
 				map(screen.x*8, screen.y*8, x*64, y*64+draw_offset, 8, 8)
+			end
+		end
+	end
+end
+
+-- is_level accounts for draw_offset and ground tiles below level height
+function draw_bg(x, y, bg, is_level)
+	srand(800)
+	for sx = 0, 7 do
+		for sy = 0, 7 do
+			local world_pos = is_level and vec2(x*64 + sx*8, y*64 + sy*8 + draw_offset) or vec2(sx*8, sy*8)
+			spr(bg, world_pos.x, world_pos.y, 1, 1, rand_bool(), rand_bool())
+			if is_level then
+				spr(27, world_pos.x, world_pos.y + level.height*64, 1, 1, rand_bool(), rand_bool())
 			end
 		end
 	end
@@ -1403,6 +1356,7 @@ c_goal = c_object:new({
 		})
 	},
 	next_level = function(self)
+		finish_level()
 		-- todo: add coroutine for an end of level anim
 		local reloadtime = time() + 5
 		jukebox.playing = true
@@ -1416,7 +1370,6 @@ c_goal = c_object:new({
 			-- todo: no next level selected... beat the game?
 		end
 		clear_state()
-		finish_level()
 		levelselection = level.next
 		for i = 64, 1, -5 do
 			transitionbox = {vec2(i, 0), vec2(64, 64)}
