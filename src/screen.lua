@@ -19,19 +19,8 @@ function update_screen()
 	end
 end
 
-function drawnoodles(s)
-	cls(4)
-	srand(800)
-	for i = 0, 64, 1 do
-		local flipx, flipy = false, false
-		if (rand_bool()) flipx = true
-		if (rand_bool()) flipy = true
-		spr(s, i%8*8, flr(i/8)*8, 1, 1, flipx, flipy)
-	end
-end
-
 function draw_screen()
-	drawnoodles(23)
+	draw_bg(0, 0, 23)
 	spr(c_player.sprites.default.number, 2*8, 7*8, 1, 1)
 	if screen == "title" then
 		spr(96, 10, 5, 4, 2)
