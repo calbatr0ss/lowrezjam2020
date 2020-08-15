@@ -209,6 +209,7 @@ c_object = c_sprite:new({
 	was_pass_thru_held = false,
 	pass_thru_time = 0.2,
 	gonna_hit_ledge = false,
+	update = function(self)	end,
 	move = function(self)
 		local p, v = self.p, self.v
 		p.y += v.y
@@ -256,11 +257,6 @@ c_pickup = c_object:new({
 	active = true,
 	respawn_time = 5,
 	picked_up_at = nil,
-	update = function(self)
-		if self.picked_up_at == nil or time() - self.picked_up_at > self.respawn_time then
-			self.active = true
-		end
-	end,
 	draw = function(self)
 		if self.active then
 			c_object.draw(self)
@@ -275,6 +271,11 @@ add(classes, c_pickup:new({}))
 
 c_granola = c_pickup:new({
 	name = "granola",
+	update = function(self)
+		if self.picked_up_at == nil or time() - self.picked_up_at > self.respawn_time then
+			self.active = true
+		end
+	end,
 	sprites = {
 		default = {
 			number = 42,
@@ -1362,6 +1363,7 @@ c_goal = c_object:new({
 		})
 	},
 	next_level = function(self)
+		formatted_time = format_time(time() - start_time)
 		save_highscore(time() - start_time)
 
 		local reloadtime = time() + 5
