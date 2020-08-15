@@ -1,4 +1,4 @@
--- yolosolo
+-- yolo solo
 -- a hot beans game
 -- cal moody and reagan burke
 -- lowrezjam 2020
@@ -278,9 +278,22 @@ add(classes, c_object:new({}))
 
 c_pickup = c_object:new({
 	name = "pickup",
-	map_pos = nil,
+	active = true,
+	respawn_time = 5,
+	picked_up_at = nil,
+	update = function(self)
+		if self.picked_up_at == nil or time() - self.picked_up_at > self.respawn_time then
+			self.active = true
+		end
+	end,
+	draw = function(self)
+		if self.active then
+			c_object.draw(self)
+		end
+	end,
 	die = function(self)
-		mset(self.map_pos.x, self.map_pos.y, 0)
+		self.picked_up_at = time()
+		self.active = false
 	end
 })
 add(classes, c_pickup:new({}))
@@ -379,10 +392,6 @@ c_entity = c_object:new({
 				self.v.y = 0
 			end
 		end
-		-- out of bounds
-		-- if (self.y / 8) > level.h then
-		-- 	self:die()
-		-- end
 		c_object.move(self)
 	end,
 	die = function(self)
@@ -796,11 +805,13 @@ c_player = c_entity:new({
 	collide = function(self, actor)
 		if c_entity.collide(self, actor) then
 			if actor.name == "granola" then
-				self.stamina = self.max_stamina
-				sfx(2, -2)
-				sfx(2, -1, 0, 9)
-				actor:die()
-				del(actors, actor)
+				-- only act if has respawned
+				if actor.active then
+					self.stamina = self.max_stamina
+					sfx(2, -2)
+					sfx(2, -1, 0, 9)
+					actor:die()
+				end
 			elseif actor.name == "chalk" then
 				self.has_chalk = true
 				sfx(4, -1, 0, 10)
@@ -816,12 +827,10 @@ c_player = c_entity:new({
 			elseif actor.name == "goal" then
 				if nextlvl == nil or costatus(nextlvl) == 'dead' then
 					nextlvl = cocreate(actor.next_level)
-					--player.state = "finished"
 					player.finished = true
 					coresume(nextlvl, actor)
 					add(coroutines, nextlvl)
 				end
-				--actor:next_level()
 			end
 		end
 	end,
@@ -1142,11 +1151,12 @@ function load_obj(w_pos, m_pos, class, tile)
 	local sprite = class.sprites.default.number
 	if sprite == tile then
 		if class.name == "granola" then
-			add(actors, class:new({ p = w_pos, map_pos = m_pos }))
+			add(actors, class:new({ p = w_pos }))
+			mset(m_pos.x, m_pos.y, 0)
 		elseif class.name == "chalk" then
-			add(actors, class:new({ p = w_pos, map_pos = m_pos }))
+			add(actors, class:new({ p = w_pos }))
+			mset(m_pos.x, m_pos.y, 0)
 		elseif class.name == "chalkhold" then
-			-- todo: fix chalkholds?
 			add(actors, class:new({ p = w_pos }))
 			mset(m_pos.x, m_pos.y, 0)
 		elseif class.name == "player" then
@@ -1229,7 +1239,7 @@ function reload_map()
 end
 
 function _init()
-	cartdata("hot_beans_yolosolo")
+	cartdata("hot_beans_yolo_solo")
 	setup()
 	jukebox = c_jukebox:new({})
 	init_screen()
@@ -1249,7 +1259,7 @@ function update_game()
 		player.on_crimp = true
 	end
 	foreach(actors, function(a)
-		-- a:move()
+		a:update()
 		player:collide(a)
 	end)
 	if (not player.dead) then
