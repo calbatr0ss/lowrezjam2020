@@ -957,7 +957,6 @@ levels = {
 			--width
 			{
 				--height
-				tombstone,
 				vec2(1, 0),
 				vec2(0, 0)
 			}
@@ -1074,13 +1073,11 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(8, 0),
 				vec2(9, 0),
 				vec2(14, 0)
 			},
 			{
-				tombstone,
 				vec2(11, 0),
 				vec2(10, 0),
 				vec2(14, 0)
@@ -1239,8 +1236,8 @@ function draw_leaves()
 	end
 	for x = 0, #level.screens - 1 do
 		for i = 0, 7 do
-			local xo = x*64+i*8--+draw_offset
-			spr(88, xo, 256, 1, 1, rand_bool())
+			local xo = x*64+i*8
+			spr(88, xo, draw_offset, 1, 1, rand_bool())
 		end
 	end
 end
