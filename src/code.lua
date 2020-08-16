@@ -361,16 +361,15 @@ c_goal = c_object:new({
 		if (music_on == "off") jukebox:stopplaying()
 
 		if levelselection == #levels+1 then
-			-- todo: go to credits/main menu
-			printh("done")
+			init_menu()
+			_update, _draw = update_credits, draw_credits
 		end
 		levelselection += 1
 		for i = 64, 1, -5 do
 			transitionbox = {vec2(i, 0), vec2(64, 64)}
 			yield()
 		end
-		transitionbox = nil
-		level_loaded = false
+		transitionbox, level_loaded = nil, false
 		clear_state()
 		init_game()
 	end,
@@ -1158,26 +1157,20 @@ levels = {
 	{
 		name = "ascent",
 		face_tile = vec2(3, 2),
-		bg = 18,
+		bg = 17,
 		screens = {
 			-- width
 			{
 				-- height
-				vec2(14, 0),
-				vec2(14, 0),
-				vec2(14, 0),
+				vec2(7, 1),
+				vec2(7, 2),
+				vec2(4, 2),
 				vec2(3, 2)
 			},
 			{
-				vec2(14, 0),
-				vec2(14, 0),
-				vec2(14, 0),
-				vec2(14, 0)
-			},
-			{
-				vec2(14, 0),
-				vec2(14, 0),
-				vec2(14, 0),
+				vec2(8, 1),
+				vec2(6, 2),
+				vec2(5, 2),
 				vec2(14, 0)
 			}
 		}
@@ -1281,9 +1274,8 @@ function load_obj(w_pos, m_pos, class, tile)
 			add(actors, class:new({ p = w_pos }))
 			mset(mx, my, 0)
 		elseif name == "player" then
-			player = class:new({ p = w_pos })
+			player, cam.pos = class:new({ p = w_pos }), vec2(w_pos.x, w_pos.y) -- copy world_pos to avoid reference issues
 			mset(mx, my, 0)
-			cam.pos = vec2(w_pos.x, w_pos.y) -- copy world_pos to avoid reference issues
 		elseif name == "goal" then
 			add(actors, class:new({ p = w_pos }))
 			mset(mx, my, 0)
@@ -1415,22 +1407,16 @@ function draw_game()
 end
 
 function init_game()
-	_update = update_game
-	_draw = draw_game
-
+	_update, _draw = update_game, draw_game
 	load_level(levelselection)
-
-	player.statemachine.parent = player
-	player.finished = false
+	player.statemachine.parent, player.finished = player, false
 	--transition into screen
 	if (tran == nil or costatus(tran) == "dead") and not level_loaded then
 		tran = cocreate(transition)
 		add(coroutines, tran)
 	end
 	if ((not level_loaded and not player.dead) or resetbuttonpressed) start_time = time()
-	level_loaded = true
-	hud = c_hud:new({})
-	toprope = rope:create()
+	hud, toprope, level_loaded = c_hud:new({}), rope:create(), true
 	-- this if statement prevents a bug when resuming after returning to menu
 	if parts == nil then
 		parts = cocreate(solveparticles)
