@@ -350,9 +350,10 @@ c_goal = c_object:new({
 		end
 		if (music_on == "off") jukebox:stopplaying()
 
-		if levelselection == #levels+1 then
+		if levelselection == #levels then
 			init_menu()
 			_update, _draw = update_credits, draw_credits
+			return
 		end
 		levelselection += 1
 		for i = 64, 1, -5 do
@@ -983,6 +984,7 @@ c_hud = c_object:new({
 add(classes, c_hud:new({}))
 
 tombstone = vec2(-1, -1)
+flat_grass = vec2(14, 0)
 -- levels can be max 4 height due to our draw space
 levels = {
 	-- level 1
@@ -995,11 +997,11 @@ levels = {
 			{
 				--height
 				vec2(14, 1),
-				vec2(14, 0)
+				flat_grass
 			},
 			{
 				vec2(15, 1),
-				vec2(14, 0)
+				flat_grass
 			}
 		}
 	},
@@ -1122,12 +1124,12 @@ levels = {
 				-- height
 				vec2(8, 0),
 				vec2(9, 0),
-				vec2(14, 0)
+				flat_grass
 			},
 			{
 				vec2(11, 0),
 				vec2(10, 0),
-				vec2(14, 0)
+				flat_grass
 			}
 		}
 	},
@@ -1169,41 +1171,41 @@ levels = {
 				vec2(8, 1),
 				vec2(6, 2),
 				vec2(5, 2),
-				vec2(14, 0)
+				flat_grass
 			}
 		}
 	},
 	-- level 11
 	{
 		name = "journey's end",
-		face_tile = vec2(12, 3),
+		face_tile = vec2(3, 3),
 		bg = 18,
 		screens = {
 			-- width
 			{
 				-- height
-				vec2(12, 0),
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(11	, 2),
+				vec2(10, 2),
+				vec2(3, 3),
+				vec2(10, 3)
 			},
 			{
-				vec2(12, 0),
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(9, 1),
+				vec2(11, 3),
+				vec2(4, 3),
+				vec2(9, 3)
 			},
 			{
-				vec2(12, 0),
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(10, 1),
+				vec2(8, 2),
+				vec2(5, 3),
+				vec2(8, 3)
 			},
 			{
-				vec2(12, 0),
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(11, 1),
+				vec2(9, 2),
+				vec2(6, 3),
+				vec2(7, 3)
 			}
 		}
 	}
@@ -1223,8 +1225,7 @@ function load_level(level_number)
 			if screen.x >= 0 and screen.y >= 0 then
 				for sx = 0, 7 do
 					for sy = 0, 7 do
-						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
-						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
+						local mapped_pos, world_pos, tile = vec2((screen.x*8)+(sx), (screen.y*8)+(sy)), vec2(x*64+sx*8, y*64+sy*8+draw_offset)
 						local tile = mget(mapped_pos.x, mapped_pos.y)
 						foreach(classes, function(c)
 							load_obj(world_pos, mapped_pos, c, tile)
@@ -1288,8 +1289,7 @@ function draw_leaves()
 	end
 	for x = 0, #level.screens - 1 do
 		for i = 0, 7 do
-			local xo = x*64+i*8
-			spr(88, xo, draw_offset, 1, 1, rand_bool())
+			spr(88, x*64+i*8, draw_offset, 1, 1, rand_bool())
 		end
 	end
 end
@@ -1460,7 +1460,7 @@ function spawnflock()
 				sprites = {45, 46, 47},
 				life = 500,
 				p = vec2(#level.screens*64 + 64 +(rnd(5)-10),
-					#level.screens[1] * 110+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
+					#level.screens[1] * 200+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
 				v = vec2(-50, 0)}))
 			end
 		end
