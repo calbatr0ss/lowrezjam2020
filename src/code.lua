@@ -383,7 +383,7 @@ add(classes, c_goal:new({}))
 
 -- music manager
 c_jukebox = c_object:new({
-	songs = {0, 6, 8, 23, 35},
+	songs = {0, 6, 8, 23, 36, 35},
 	currentsong = -1,
 	playing = true,
 	startplayingnow = function(self, songn, f, chmsk)
@@ -1005,7 +1005,6 @@ levels = {
 			--width
 			{
 				--height
-				tombstone,
 				vec2(1, 0),
 				vec2(0, 0)
 			}
@@ -1122,13 +1121,11 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(8, 0),
 				vec2(9, 0),
 				vec2(14, 0)
 			},
 			{
-				tombstone,
 				vec2(11, 0),
 				vec2(10, 0),
 				vec2(14, 0)
@@ -1298,9 +1295,15 @@ function draw_leaves()
 	--draw the sides of the level
 	for y = 0, #level.screens[1] - 1 do
 		for i = 0, 7 do
-			yo = y*64+i*8+draw_offset
+			local yo = y*64+i*8+draw_offset
 			spr(72, #level.screens * 64 - 8, yo, 1, 1, false, rand_bool())
 			spr(72, 0, yo, 1, 1, true, rand_bool())
+		end
+	end
+	for x = 0, #level.screens - 1 do
+		for i = 0, 7 do
+			local xo = x*64+i*8
+			spr(88, xo, draw_offset, 1, 1, rand_bool())
 		end
 	end
 end
@@ -1308,8 +1311,8 @@ end
 function draw_level()
 	clip(cam.x, cam.y, 64, 64)
 	-- Draw the background leaves based on camera position
-	for x = 0, 8, 1 do
-		for y = 0, 8, 1 do
+	for x = 0, 8 do
+		for y = 0, 8 do
 			local camo = vec2(cam.pos.x %8 + 8, cam.pos.y %8 + 8)
 			srand((cam.pos.x - camo.x + x * 8) + cam.pos.y - camo.y + y * 8)
 			spr(73, cam.pos.x - camo.x + x * 8 + 8, cam.pos.y - camo.y + y * 8 + 8, 1, 1, rand_bool(), rand_bool())
@@ -1457,7 +1460,7 @@ function respawn()
 		clear_state()
 		init_game()
 		player.dead = false
-		for i = 1, 10, 1 do
+		for i = 1, 10 do
 			local o = player.p + vec2(sin(10/i) * 10 - 4, cos(10/i) * 10 - 4)
 			local p = c_particle:new({p = player.p + vec2(sin(10/i) * 15, cos(10/i) * 15), v = (player.p-o)*5, life = 10, c = 14})
 			add(particles, p)
