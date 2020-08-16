@@ -28,9 +28,6 @@ end
 function splashinit()
 	splashtime = 0
 	cls()
-	rectfill(0, 0, 64, 64, 0)
-	sfx(0)
-	spr(110, 22, 25, 2, 2)
 end
 
 function splash_draw()

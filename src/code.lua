@@ -1050,9 +1050,11 @@ levels = {
 			-- width
 			{
 				-- height
+				tombstone,
 				vec2(13, 0)
 			},
 			{
+				tombstone,
 				vec2(15, 0)
 			}
 		}
@@ -1066,10 +1068,12 @@ levels = {
 			-- width
 			{
 				-- height
+				tombstone,
 				vec2(12, 1),
 				vec2(12, 2)
 			},
 			{
+				tombstone,
 				vec2(13, 1),
 				vec2(13, 2)
 			}
@@ -1084,10 +1088,12 @@ levels = {
 			-- width
 			{
 				-- height
+				tombstone,
 				vec2(12, 0),
 				vec2(12, 3)
 			},
 			{
+				tombstone,
 				tombstone,
 				vec2(13, 3)
 			}
@@ -1097,7 +1103,7 @@ levels = {
 	{
 		name = "crimp n' co.",
 		face_tile = vec2(4, 0),
-		bg = 23,
+		bg = 17,
 		screens = {
 			-- width
 			{
@@ -1142,11 +1148,13 @@ levels = {
 			-- width
 			{
 				-- height
+				tombstone,
 				vec2(6, 1),
 				vec2(3, 1),
 				vec2(1, 1)
 			},
 			{
+				tombstone,
 				vec2(5, 1),
 				vec2(4, 1),
 				vec2(2, 1)
@@ -1179,7 +1187,7 @@ levels = {
 	{
 		name = "journey's end",
 		face_tile = vec2(3, 3),
-		bg = 18,
+		bg = 17,
 		screens = {
 			-- width
 			{
@@ -1460,7 +1468,7 @@ function spawnflock()
 				sprites = {45, 46, 47},
 				life = 500,
 				p = vec2(#level.screens*64 + 64 +(rnd(5)-10),
-					#level.screens[1] * 200+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
+					#level.screens[1] * 120+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
 				v = vec2(-50, 0)}))
 			end
 		end
