@@ -1,6 +1,6 @@
 function sinxshake(pos, a, s, t)
 	local p = pos.x
-	for i = 1, t, 1 do
+	for i = 1, t do
 		pos.x = p + sin(i*s/10)*(a/i*a)
 		yield()
 	end

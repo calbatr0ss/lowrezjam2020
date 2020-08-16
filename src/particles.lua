@@ -99,7 +99,7 @@ airjump = s_particle:new({
 function solveparticles()
 	while true do
 		if (#particles > 0) then
-			for j = 1, #particles, 1 do
+			for j = 1, #particles do
 				particles[j]:solve()
 				particles[j].time += 1
 			end
@@ -155,7 +155,7 @@ rope = {
 	end,
 	init = function(self)
 		self.struts = {}
-		for i = 1, #self.verts - 1, 1 do
+		for i = 1, #self.verts - 1 do
 			local strut = c_strut:new({
 				ends = {
 					self.verts[i],
@@ -176,7 +176,7 @@ rope = {
 		self.time = 0
 		local struts, send1, send2 = self.struts, {}, {}
 		-- Positions need to be set first, and endpoint v needs to be 0
-		for i = 1, #struts, 1 do
+		for i = 1, #struts do
 			send1, send2 = struts[i].ends[1], struts[i].ends[2]
 			-- send1.lastpos = send1.p
 			-- send2.lastpos = send2.p
@@ -188,7 +188,7 @@ rope = {
 		struts[1].ends[1].v = player.v
 		--struts[#struts].ends[2].v = vec2(0, 0)
 		-- position based forces are then applied
-		for i = 1, #struts, 1 do
+		for i = 1, #struts do
 			send1, send2 = struts[i].ends[1], struts[i].ends[2]
 			local strutforces = struts[i]:calculateforces()
 			send1.f += strutforces
@@ -197,7 +197,7 @@ rope = {
 			-- send2.f += (vec2(0, send1.g) * send1.m)
 		end
 		-- finally, velocities are calculated
-		for i = 1, #struts, 1 do
+		for i = 1, #struts do
 			send1, send2 = struts[i].ends[1], struts[i].ends[2]
 			-- send1.v = send1.v + (send1.f / send1.m * send1.dt) - (send1.v * send1.damp*send1.dt)
 			send1 = c_particle.solve(send1)
@@ -213,7 +213,7 @@ rope = {
 		pset(-128, 128, 13)
 	end,
 	drawrope = function(self)
-		for i = 1, #self.struts, 1 do
+		for i = 1, #self.struts do
 			self.struts[i]:draw()
 		end
 	end,
@@ -226,7 +226,7 @@ rope = {
 	create = function(self)
 		local v = {}
 		local offset = vec2(32, -20)
-		for i = 1, 5, 1 do
+		for i = 1, 5 do
 			add(v, c_particle:new({
 				--p = player.p - ((cam.pos + offset) * (i * 0.05)),
 				p = player.p + vec2(i, 0),
@@ -254,7 +254,7 @@ rope = {
 }
 
 function drawparticles()
-	for i=1, #particles, 1 do
+	for i=1, #particles do
 		particles[i]:draw()
 	end
 end
