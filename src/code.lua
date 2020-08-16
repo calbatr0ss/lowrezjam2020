@@ -353,7 +353,7 @@ c_goal = c_object:new({
 
 		local reloadtime = end_time + 5
 		jukebox.playing = true
-		jukebox:startplayingnow(5)
+		jukebox:startplayingnow(6)
 		player.movable = false
 		while time() < reloadtime do
 			yield()
