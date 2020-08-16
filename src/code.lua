@@ -21,17 +21,7 @@
 	x: 5
 --]]
 
-player = nil
-g_force = 0.2
-classes = {}
-actors = {}
-particles = {}
-coroutines = {}
-start_time = 0
-level_loaded = false
-end_time = 0
-musicoff = false
-resetbuttonpressed = false
+player, classes, actors, particles, coroutines, g_force, start_time, level_loaded, musicoff, resetbuttonpressed  = nil, {}, {}, {}, {}, 0.2, 0, false, false, false
 
 --vector functions (turns out order matters)
 function vec2(x, y)
@@ -997,6 +987,24 @@ tombstone = vec2(-1, -1)
 levels = {
 	-- level 1
 	{
+		name = "gap",
+		face_tile = vec2(14, 1),
+		bg = 19,
+		screens = {
+			--width
+			{
+				--height
+				vec2(14, 1),
+				vec2(14, 0)
+			},
+			{
+				vec2(15, 1),
+				vec2(14, 0)
+			}
+		}
+	},
+	-- level 2
+	{
 		name = "v-easy",
 		face_tile = vec2(0, 0),
 		bg = 18,
@@ -1009,7 +1017,7 @@ levels = {
 			}
 		}
 	},
-	-- level 2
+	-- level 3
 	{
 		name = "traverse",
 		face_tile = vec2(1, 2),
@@ -1031,7 +1039,7 @@ levels = {
 			}
 		}
 	},
-	-- level 3
+	-- level 4
 	{
 		name = "chalk",
 		face_tile = vec2(13, 0),
@@ -1040,16 +1048,14 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(13, 0)
 			},
 			{
-				tombstone,
 				vec2(15, 0)
 			}
 		}
 	},
-	-- level 4
+	-- level 5
 	{
 		name = "climbers",
 		face_tile = vec2(12, 2),
@@ -1058,18 +1064,16 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(12, 1),
 				vec2(12, 2)
 			},
 			{
-				tombstone,
 				vec2(13, 1),
 				vec2(13, 2)
 			}
 		}
 	},
-	-- level 5
+	-- level 6
 	{
 		name = "cracks",
 		face_tile = vec2(12, 3),
@@ -1078,18 +1082,16 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(12, 0),
 				vec2(12, 3)
 			},
 			{
 				tombstone,
-				tombstone,
 				vec2(13, 3)
 			}
 		}
 	},
-	-- level 6
+	-- level 7
 	{
 		name = "crimp n' co.",
 		face_tile = vec2(4, 0),
@@ -1098,20 +1100,18 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(7, 0),
 				vec2(5, 0),
 				vec2(4, 0)
 			},
 			{
-				tombstone,
 				vec2(6, 0),
 				vec2(3, 0),
 				vec2(2, 0)
 			}
 		}
 	},
-	-- level 7
+	-- level 8
 	{
 		name = "roundabout",
 		face_tile = vec2(8, 0),
@@ -1131,7 +1131,7 @@ levels = {
 			}
 		}
 	},
-	-- level 8
+	-- level 9
 	{
 		name = "get crackin'",
 		face_tile = vec2(1, 1),
@@ -1140,20 +1140,18 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(6, 1),
 				vec2(3, 1),
 				vec2(1, 1)
 			},
 			{
-				tombstone,
 				vec2(5, 1),
 				vec2(4, 1),
 				vec2(2, 1)
 			}
 		}
 	},
-	-- level 9
+	-- level 10
 	{
 		name = "ascent",
 		face_tile = vec2(3, 2),
@@ -1175,7 +1173,7 @@ levels = {
 			}
 		}
 	},
-	-- level 10
+	-- level 11
 	{
 		name = "journey's end",
 		face_tile = vec2(12, 3),
@@ -1217,8 +1215,7 @@ function load_level(level_number)
 	reload_map()
 	jukebox:startplayingnow(level_number%3+3, 3000, 9)
 	level = levels[level_number]
-	local level_width = #level.screens
-	local level_height = #level.screens[1]
+	local level_width, level_height = #level.screens, #level.screens[1]
 	for x = 0, level_width - 1 do
 		for y = 0, level_height - 1 do
 			local screen = level.screens[x+1][y+1]
@@ -1252,13 +1249,10 @@ function save_highscore(score)
 end
 
 function clear_state()
-	actors = {}
-	particles = {}
 	if player then -- workaround for referential sprites table
 		player.sprites.default.number = 1
 	end
-	player = nil
-	toprope = nil
+	actors, particles, player, toprope = {}, {}, nil, nil
 end
 
 function load_obj(w_pos, m_pos, class, tile)
@@ -1452,9 +1446,7 @@ function respawn()
 			add(particles, p)
 		end
 		sfx(12, 3)
-		player.movable = true
-		player.v = vec2(0, 0)
-		resetbuttonpressed = false
+		player.movable, player.v, resetbuttonpressed = true, vec2(0, 0), false
 	end
 end
 
@@ -1482,8 +1474,7 @@ function transition()
 		transitionbox = {vec2(0, 0), vec2(i, 64)}
 		yield()
 	end
-	transitionbox = nil
-	player.movable = true
+	transitionbox, player.movable = nil, true
 end
 
 -- drawing the actual transition
