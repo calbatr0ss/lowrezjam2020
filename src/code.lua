@@ -21,17 +21,7 @@
 	x: 5
 --]]
 
-player = nil
-g_force = 0.2
-classes = {}
-actors = {}
-particles = {}
-coroutines = {}
-start_time = 0
-level_loaded = false
-end_time = 0
-musicoff = false
-resetbuttonpressed = false
+player, classes, actors, particles, coroutines, g_force, start_time, level_loaded, musicoff, resetbuttonpressed  = nil, {}, {}, {}, {}, 0.2, 0, false, false, false
 
 --vector functions (turns out order matters)
 function vec2(x, y)
@@ -360,9 +350,10 @@ c_goal = c_object:new({
 		end
 		if (music_on == "off") jukebox:stopplaying()
 
-		if levelselection == #levels+1 then
+		if levelselection == #levels then
 			init_menu()
 			_update, _draw = update_credits, draw_credits
+			return
 		end
 		levelselection += 1
 		for i = 64, 1, -5 do
@@ -993,9 +984,28 @@ c_hud = c_object:new({
 add(classes, c_hud:new({}))
 
 tombstone = vec2(-1, -1)
+flat_grass = vec2(14, 0)
 -- levels can be max 4 height due to our draw space
 levels = {
 	-- level 1
+	{
+		name = "gap",
+		face_tile = vec2(14, 1),
+		bg = 19,
+		screens = {
+			--width
+			{
+				--height
+				vec2(14, 1),
+				flat_grass
+			},
+			{
+				vec2(15, 1),
+				flat_grass
+			}
+		}
+	},
+	-- level 2
 	{
 		name = "v-easy",
 		face_tile = vec2(0, 0),
@@ -1009,7 +1019,7 @@ levels = {
 			}
 		}
 	},
-	-- level 2
+	-- level 3
 	{
 		name = "traverse",
 		face_tile = vec2(1, 2),
@@ -1031,7 +1041,7 @@ levels = {
 			}
 		}
 	},
-	-- level 3
+	-- level 4
 	{
 		name = "chalk",
 		face_tile = vec2(13, 0),
@@ -1040,16 +1050,14 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(13, 0)
 			},
 			{
-				tombstone,
 				vec2(15, 0)
 			}
 		}
 	},
-	-- level 4
+	-- level 5
 	{
 		name = "climbers",
 		face_tile = vec2(12, 2),
@@ -1058,18 +1066,16 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(12, 1),
 				vec2(12, 2)
 			},
 			{
-				tombstone,
 				vec2(13, 1),
 				vec2(13, 2)
 			}
 		}
 	},
-	-- level 5
+	-- level 6
 	{
 		name = "cracks",
 		face_tile = vec2(12, 3),
@@ -1078,18 +1084,16 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(12, 0),
 				vec2(12, 3)
 			},
 			{
 				tombstone,
-				tombstone,
 				vec2(13, 3)
 			}
 		}
 	},
-	-- level 6
+	-- level 7
 	{
 		name = "crimp n' co.",
 		face_tile = vec2(4, 0),
@@ -1098,20 +1102,18 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(7, 0),
 				vec2(5, 0),
 				vec2(4, 0)
 			},
 			{
-				tombstone,
 				vec2(6, 0),
 				vec2(3, 0),
 				vec2(2, 0)
 			}
 		}
 	},
-	-- level 7
+	-- level 8
 	{
 		name = "roundabout",
 		face_tile = vec2(8, 0),
@@ -1122,16 +1124,16 @@ levels = {
 				-- height
 				vec2(8, 0),
 				vec2(9, 0),
-				vec2(14, 0)
+				flat_grass
 			},
 			{
 				vec2(11, 0),
 				vec2(10, 0),
-				vec2(14, 0)
+				flat_grass
 			}
 		}
 	},
-	-- level 8
+	-- level 9
 	{
 		name = "get crackin'",
 		face_tile = vec2(1, 1),
@@ -1140,20 +1142,18 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
 				vec2(6, 1),
 				vec2(3, 1),
 				vec2(1, 1)
 			},
 			{
-				tombstone,
 				vec2(5, 1),
 				vec2(4, 1),
 				vec2(2, 1)
 			}
 		}
 	},
-	-- level 9
+	-- level 10
 	{
 		name = "ascent",
 		face_tile = vec2(3, 2),
@@ -1171,41 +1171,41 @@ levels = {
 				vec2(8, 1),
 				vec2(6, 2),
 				vec2(5, 2),
-				vec2(14, 0)
+				flat_grass
 			}
 		}
 	},
-	-- level 10
+	-- level 11
 	{
 		name = "journey's end",
-		face_tile = vec2(12, 3),
+		face_tile = vec2(3, 3),
 		bg = 18,
 		screens = {
 			-- width
 			{
 				-- height
-				vec2(12, 0),
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(11	, 2),
+				vec2(10, 2),
+				vec2(3, 3),
+				vec2(10, 3)
 			},
 			{
-				vec2(12, 0),
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(9, 1),
+				vec2(11, 3),
+				vec2(4, 3),
+				vec2(9, 3)
 			},
 			{
-				vec2(12, 0),
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(10, 1),
+				vec2(8, 2),
+				vec2(5, 3),
+				vec2(8, 3)
 			},
 			{
-				vec2(12, 0),
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(11, 1),
+				vec2(9, 2),
+				vec2(6, 3),
+				vec2(7, 3)
 			}
 		}
 	}
@@ -1217,8 +1217,7 @@ function load_level(level_number)
 	reload_map()
 	jukebox:startplayingnow(level_number%3+3, 3000, 9)
 	level = levels[level_number]
-	local level_width = #level.screens
-	local level_height = #level.screens[1]
+	local level_width, level_height = #level.screens, #level.screens[1]
 	for x = 0, level_width - 1 do
 		for y = 0, level_height - 1 do
 			local screen = level.screens[x+1][y+1]
@@ -1226,8 +1225,7 @@ function load_level(level_number)
 			if screen.x >= 0 and screen.y >= 0 then
 				for sx = 0, 7 do
 					for sy = 0, 7 do
-						local mapped_pos = vec2((screen.x*8)+(sx), (screen.y*8)+(sy))
-						local world_pos = vec2(x*64+sx*8, y*64+sy*8+draw_offset)
+						local mapped_pos, world_pos, tile = vec2((screen.x*8)+(sx), (screen.y*8)+(sy)), vec2(x*64+sx*8, y*64+sy*8+draw_offset)
 						local tile = mget(mapped_pos.x, mapped_pos.y)
 						foreach(classes, function(c)
 							load_obj(world_pos, mapped_pos, c, tile)
@@ -1252,13 +1250,10 @@ function save_highscore(score)
 end
 
 function clear_state()
-	actors = {}
-	particles = {}
 	if player then -- workaround for referential sprites table
 		player.sprites.default.number = 1
 	end
-	player = nil
-	toprope = nil
+	actors, particles, player, toprope = {}, {}, nil, nil
 end
 
 function load_obj(w_pos, m_pos, class, tile)
@@ -1294,8 +1289,7 @@ function draw_leaves()
 	end
 	for x = 0, #level.screens - 1 do
 		for i = 0, 7 do
-			local xo = x*64+i*8
-			spr(88, xo, draw_offset, 1, 1, rand_bool())
+			spr(88, x*64+i*8, draw_offset, 1, 1, rand_bool())
 		end
 	end
 end
@@ -1452,9 +1446,7 @@ function respawn()
 			add(particles, p)
 		end
 		sfx(12, 3)
-		player.movable = true
-		player.v = vec2(0, 0)
-		resetbuttonpressed = false
+		player.movable, player.v, resetbuttonpressed = true, vec2(0, 0), false
 	end
 end
 
@@ -1468,7 +1460,7 @@ function spawnflock()
 				sprites = {45, 46, 47},
 				life = 500,
 				p = vec2(#level.screens*64 + 64 +(rnd(5)-10),
-					#level.screens[1] * 110+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
+					#level.screens[1] * 200+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
 				v = vec2(-50, 0)}))
 			end
 		end
@@ -1482,8 +1474,7 @@ function transition()
 		transitionbox = {vec2(0, 0), vec2(i, 64)}
 		yield()
 	end
-	transitionbox = nil
-	player.movable = true
+	transitionbox, player.movable = nil, true
 end
 
 -- drawing the actual transition
