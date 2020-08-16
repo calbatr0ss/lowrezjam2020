@@ -1439,12 +1439,10 @@ end
 
 function respawn()
 	if not player.finished then
-		--player.v = vec2(0, 0)
 		local respawntimer = time() + 1
 		while time() < respawntimer and player.dead do
 			yield()
 		end
-		--if (player and not player.dead) start_time = time()
 		clear_state()
 		init_game()
 		player.dead = false
@@ -1461,14 +1459,14 @@ end
 function spawnflock()
 	while true do
 		srand(time())
-		-- every ten seconds, there's a 10 percent chance of spawning a flock
+		-- every ten seconds, there's a 1 in 10 chance of spawning a flock
 		if time() % 10 == 1 and flr(rnd(10)) == 1 then
 			for i=-3, 3 do
 				add(particles, s_particle:new({fo = flr(rnd(4)),
 				sprites = {45, 46, 47},
 				life = 500,
 				p = vec2(#level.screens*64 + 64 +(rnd(5)-10),
-					#level.screens[1] * 120+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
+					player.p.y-25+(rnd(5)-10)) + vec2(abs(i) * 6, i * 6),
 				v = vec2(-50, 0)}))
 			end
 		end
