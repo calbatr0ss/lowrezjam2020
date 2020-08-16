@@ -989,7 +989,7 @@ flat_grass = vec2(14, 0)
 levels = {
 	-- level 1
 	{
-		name = "gap",
+		name = "learn the ropes",
 		face_tile = vec2(14, 1),
 		bg = 19,
 		screens = {
@@ -1021,7 +1021,7 @@ levels = {
 	},
 	-- level 3
 	{
-		name = "traverse",
+		name = "sandy traverse",
 		face_tile = vec2(1, 2),
 		bg = 21,
 		screens = {
@@ -1061,7 +1061,7 @@ levels = {
 	},
 	-- level 5
 	{
-		name = "climbers",
+		name = "chalky dynos",
 		face_tile = vec2(12, 2),
 		bg = 21,
 		screens = {
@@ -1081,7 +1081,7 @@ levels = {
 	},
 	-- level 6
 	{
-		name = "cracks",
+		name = "leap of faith",
 		face_tile = vec2(12, 3),
 		bg = 18,
 		screens = {
@@ -1101,9 +1101,9 @@ levels = {
 	},
 	-- level 7
 	{
-		name = "crimp n' co.",
+		name = "cranky crimps",
 		face_tile = vec2(4, 0),
-		bg = 17,
+		bg = 22,
 		screens = {
 			-- width
 			{
@@ -1121,9 +1121,9 @@ levels = {
 	},
 	-- level 8
 	{
-		name = "roundabout",
+		name = "down under",
 		face_tile = vec2(8, 0),
-		bg = 19,
+		bg = 20,
 		screens = {
 			-- width
 			{
@@ -1163,9 +1163,9 @@ levels = {
 	},
 	-- level 10
 	{
-		name = "ascent",
+		name = "take!",
 		face_tile = vec2(3, 2),
-		bg = 17,
+		bg = 22,
 		screens = {
 			-- width
 			{
@@ -1185,7 +1185,7 @@ levels = {
 	},
 	-- level 11
 	{
-		name = "journey's end",
+		name = "ascent",
 		face_tile = vec2(3, 3),
 		bg = 17,
 		screens = {
