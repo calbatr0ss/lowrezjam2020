@@ -1215,7 +1215,7 @@ draw_offset = 256
 
 function load_level(level_number)
 	reload_map()
-	jukebox:startplayingnow(level_number%2+3, 3000, 11)
+	jukebox:startplayingnow(level_number%3+3, 3000, 9)
 	level = levels[level_number]
 	local level_width = #level.screens
 	local level_height = #level.screens[1]
