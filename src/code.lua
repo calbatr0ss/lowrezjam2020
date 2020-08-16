@@ -810,10 +810,12 @@ c_player = c_entity:new({
 					actor:die()
 				end
 			elseif actor.name == "chalk" then
-				self.has_chalk = true
-				sfx(4, -1, 0, 10)
-				actor:die()
-				del(actors, actor)
+				if not self.has_chalk then
+					self.has_chalk = true
+					sfx(4, -1, 0, 10)
+					actor:die()
+					del(actors, actor)
+				end
 			elseif actor.name == "chalkhold" then
 				if actor.activated then
 					self.on_jug = true
@@ -985,46 +987,6 @@ levels = {
 	},
 	-- level 3
 	{
-		name = "gap",
-		face_tile = vec2(14, 1),
-		bg = 19,
-		screens = {
-			--width
-			{
-				--height
-				tombstone,
-				vec2(14, 1),
-				vec2(14, 0)
-			},
-			{
-				tombstone,
-				vec2(15, 1),
-				vec2(14, 0)
-			}
-		}
-	},
-	-- level 4
-	{
-		name = "drop",
-		face_tile = vec2(14, 2),
-		bg = 19,
-		screens = {
-			--width
-			{
-				--height
-				tombstone,
-				vec2(14, 2),
-				vec2(14, 3)
-			},
-			{
-				tombstone,
-				vec2(15, 2),
-				vec2(15, 3)
-			}
-		}
-	},
-	-- level 5
-	{
 		name = "chalk",
 		face_tile = vec2(13, 0),
 		bg = 20,
@@ -1041,7 +1003,7 @@ levels = {
 			}
 		}
 	},
-	-- level 6
+	-- level 4
 	{
 		name = "climbers",
 		face_tile = vec2(12, 2),
@@ -1061,7 +1023,7 @@ levels = {
 			}
 		}
 	},
-	-- level 7
+	-- level 5
 	{
 		name = "cracks",
 		face_tile = vec2(12, 3),
@@ -1081,7 +1043,7 @@ levels = {
 			}
 		}
 	},
-	-- level 8
+	-- level 6
 	{
 		name = "crimp n' co.",
 		face_tile = vec2(4, 0),
@@ -1103,9 +1065,53 @@ levels = {
 			}
 		}
 	},
+	-- level 7
+	{
+		name = "roundabout",
+		face_tile = vec2(8, 0),
+		bg = 19,
+		screens = {
+			-- width
+			{
+				-- height
+				tombstone,
+				vec2(8, 0),
+				vec2(9, 0),
+				vec2(14, 0)
+			},
+			{
+				tombstone,
+				vec2(11, 0),
+				vec2(10, 0),
+				vec2(14, 0)
+			}
+		}
+	},
+	-- level 8
+	{
+		name = "get crackin'",
+		face_tile = vec2(1, 1),
+		bg = 18,
+		screens = {
+			-- width
+			{
+				-- height
+				tombstone,
+				vec2(6, 1),
+				vec2(3, 1),
+				vec2(1, 1)
+			},
+			{
+				tombstone,
+				vec2(5, 1),
+				vec2(4, 1),
+				vec2(2, 1)
+			}
+		}
+	},
 	-- level 9
 	{
-		name = "crimpy!",
+		name = "todo",
 		face_tile = vec2(12, 3),
 		bg = 18,
 		screens = {
@@ -1127,29 +1133,7 @@ levels = {
 	},
 	-- level 10
 	{
-		name = "crimpy!",
-		face_tile = vec2(12, 3),
-		bg = 18,
-		screens = {
-			-- width
-			{
-				-- height
-				tombstone,
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
-			},
-			{
-				tombstone,
-				tombstone,
-				tombstone,
-				vec2(13, 3)
-			}
-		}
-	},
-	-- level 11
-	{
-		name = "crimpy!",
+		name = "journey's end",
 		face_tile = vec2(12, 3),
 		bg = 18,
 		screens = {
