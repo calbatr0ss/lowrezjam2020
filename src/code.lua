@@ -85,8 +85,7 @@ function vdist(v1, v2)
 end
 
 cam = {
-	-- todo: use the offset here
-	pos = vec2(0, 0-1280),
+	pos = nil,
 	lerp = 0.15,
 	update = function(self, track_pos)
 		-- lerp follow
@@ -307,8 +306,6 @@ c_chalkhold = c_object:new({
 		if self.activated then
 			self.anims.drip.playing = true
 			frame = self.anims.drip:loopforward()
-			--frame = self.anims.drip.frames[self.anims.drip.currentframe]
-			--spr(self.sprite.number, self.p.x, self.p.y, 1, 1, self.flip)
 		elseif player.has_chalk then
 			frame = 37
 		elseif not player.has_chalk then
@@ -333,7 +330,58 @@ c_chalk = c_pickup:new({
 })
 add(classes, c_chalk:new({}))
 
--- Music manager
+c_goal = c_object:new({
+	name = "goal",
+	sprites = {
+		default = {
+			number = 60,
+			hitbox = {o = vec2(0, 0), w = 8, h = 8}
+		}
+	},
+	anims = {
+		wave = c_anim:new({
+			frames = {60, 61, 62, 63},
+			fr = 5,
+			fc = 4,
+			playing = true
+		})
+	},
+	next_level = function(self)
+		local end_time = time()
+		formatted_time = format_time(end_time - start_time)
+		save_highscore(end_time - start_time)
+
+		local reloadtime = end_time + 5
+		jukebox.playing = true
+		jukebox:startplayingnow(5)
+		player.movable = false
+		while time() < reloadtime do
+			yield()
+		end
+		if (music_on == "off") jukebox:stopplaying()
+
+		if levelselection == #levels+1 then
+			-- todo: go to credits/main menu
+			printh("done")
+		end
+		levelselection += 1
+		for i = 64, 1, -5 do
+			transitionbox = {vec2(i, 0), vec2(64, 64)}
+			yield()
+		end
+		transitionbox = nil
+		level_loaded = false
+		clear_state()
+		init_game()
+	end,
+	draw = function(self)
+		local frame = self.anims.wave:loopforward()
+		spr(frame, self.p.x, self.p.y)
+	end
+})
+add(classes, c_goal:new({}))
+
+-- music manager
 c_jukebox = c_object:new({
 	songs = {0, 6, 8, 23, 35},
 	currentsong = -1,
@@ -924,9 +972,9 @@ c_hud = c_object:new({
 	end,
 	shakehand = function(self)
 		self.hando = vec2(0, 0)
-		--Should check if there is already a coroutine running , and either delete it
-		--or resume it. This prevents a crash in the event you spam the button too much.
-		--Fix this post jam
+		-- should check if there is already a coroutine running , and either delete it
+		-- or resume it. this prevents a crash in the event you spam the button too much.
+		-- fix this post jam
 		sfx(8, -2)
 		sfx(8, -1, 0, 12)
 		shakeh = cocreate(sinxshake)
@@ -1111,23 +1159,29 @@ levels = {
 	},
 	-- level 9
 	{
-		name = "todo",
-		face_tile = vec2(12, 3),
+		name = "ascent",
+		face_tile = vec2(3, 2),
 		bg = 18,
 		screens = {
 			-- width
 			{
 				-- height
-				tombstone,
-				vec2(12, 0),
-				vec2(12, 3),
-				vec2(12, 3)
+				vec2(14, 0),
+				vec2(14, 0),
+				vec2(14, 0),
+				vec2(3, 2)
 			},
 			{
-				tombstone,
-				tombstone,
-				tombstone,
-				vec2(13, 3)
+				vec2(14, 0),
+				vec2(14, 0),
+				vec2(14, 0),
+				vec2(14, 0)
+			},
+			{
+				vec2(14, 0),
+				vec2(14, 0),
+				vec2(14, 0),
+				vec2(14, 0)
 			}
 		}
 	},
@@ -1140,16 +1194,28 @@ levels = {
 			-- width
 			{
 				-- height
-				tombstone,
+				vec2(12, 0),
 				vec2(12, 0),
 				vec2(12, 3),
 				vec2(12, 3)
 			},
 			{
-				tombstone,
-				tombstone,
-				tombstone,
-				vec2(13, 3)
+				vec2(12, 0),
+				vec2(12, 0),
+				vec2(12, 3),
+				vec2(12, 3)
+			},
+			{
+				vec2(12, 0),
+				vec2(12, 0),
+				vec2(12, 3),
+				vec2(12, 3)
+			},
+			{
+				vec2(12, 0),
+				vec2(12, 0),
+				vec2(12, 3),
+				vec2(12, 3)
 			}
 		}
 	}
@@ -1206,24 +1272,24 @@ function clear_state()
 end
 
 function load_obj(w_pos, m_pos, class, tile)
-	local sprite = class.sprites.default.number
+	local sprite, name, mx, my = class.sprites.default.number, class.name, m_pos.x, m_pos.y
 	if sprite == tile then
-		if class.name == "granola" then
+		if name == "granola" then
 			add(actors, class:new({ p = w_pos }))
-			mset(m_pos.x, m_pos.y, 0)
-		elseif class.name == "chalk" then
+			mset(mx, my, 0)
+		elseif name == "chalk" then
 			add(actors, class:new({ p = w_pos }))
-			mset(m_pos.x, m_pos.y, 0)
-		elseif class.name == "chalkhold" then
+			mset(mx, my, 0)
+		elseif name == "chalkhold" then
 			add(actors, class:new({ p = w_pos }))
-			mset(m_pos.x, m_pos.y, 0)
-		elseif class.name == "player" then
+			mset(mx, my, 0)
+		elseif name == "player" then
 			player = class:new({ p = w_pos })
-			mset(m_pos.x, m_pos.y, 0)
+			mset(mx, my, 0)
 			cam.pos = vec2(w_pos.x, w_pos.y) -- copy world_pos to avoid reference issues
-		elseif class.name == "goal" then
+		elseif name == "goal" then
 			add(actors, class:new({ p = w_pos }))
-			mset(m_pos.x, m_pos.y, 0)
+			mset(mx, my, 0)
 		end
 	end
 end
@@ -1251,8 +1317,7 @@ function draw_level()
 	end
 
 	--draw the elements in the level
-	local level_width = #level.screens
-	local level_height = #level.screens[1]
+	local level_width, level_height = #level.screens, #level.screens[1]
 	for x = 0, level_width - 1 do
 		for y = 0, level_height - 1 do
 			local screen = level.screens[x+1][y+1]
@@ -1342,7 +1407,6 @@ function draw_game()
 	drawparticles()
 	cam:update(player.p)
 	hud:draw()
-	--getsendy()
 	drawtransition()
 	-- print("cpu "..stat(1), player.p.x-20, player.p.y - 5, 7)
 end
@@ -1362,7 +1426,6 @@ function init_game()
 	end
 	if ((not level_loaded and not player.dead) or resetbuttonpressed) start_time = time()
 	level_loaded = true
-	--player.movable = true
 	hud = c_hud:new({})
 	toprope = rope:create()
 	-- this if statement prevents a bug when resuming after returning to menu
@@ -1376,7 +1439,6 @@ function init_game()
 	end
 	menuitem(2, "back to menu", init_menu)
 	menuitem(1, "reload level", timereset)
-	--jukebox:startplayingnow(3, 2000, 11)
 end
 
 function timereset()
@@ -1407,62 +1469,10 @@ function respawn()
 	end
 end
 
-c_goal = c_object:new({
-	name = "goal",
-	sprites = {
-		default = {
-			number = 60,
-			hitbox = {o = vec2(0, 0), w = 8, h = 8}
-		}
-	},
-	anims = {
-		wave = c_anim:new({
-			frames = {60, 61, 62, 63},
-			fr = 5,
-			fc = 4,
-			playing = true
-		})
-	},
-	next_level = function(self)
-		local end_time = time()
-		formatted_time = format_time(end_time - start_time)
-		save_highscore(end_time - start_time)
-
-		local reloadtime = end_time + 5
-		jukebox.playing = true
-		jukebox:startplayingnow(5)
-		player.movable = false
-		while time() < reloadtime do
-			yield()
-		end
-		if (music_on == "off") jukebox:stopplaying()
-
-		if levelselection == #levels+1 then
-			-- todo: go to credits/main menu
-			printh("done")
-		end
-		levelselection += 1
-		for i = 64, 1, -5 do
-			transitionbox = {vec2(i, 0), vec2(64, 64)}
-			yield()
-		end
-		transitionbox = nil
-		level_loaded = false
-		clear_state()
-		init_game()
-	end,
-	draw = function(self)
-		local frame = self.anims.wave:loopforward()
-		--frame = self.anims.wave.frames[frame]
-		spr(frame, self.p.x, self.p.y)
-	end
-})
-add(classes, c_goal:new({}))
-
 function spawnflock()
 	while true do
 		srand(time())
-		-- Every ten seconds, there's a 10 percent chance of spawning a flock
+		-- every ten seconds, there's a 10 percent chance of spawning a flock
 		if time() % 10 == 1 and flr(rnd(10)) == 1 then
 			for i=-3, 3 do
 				add(particles, s_particle:new({fo = flr(rnd(4)),
@@ -1477,7 +1487,7 @@ function spawnflock()
 	end
 end
 
--- Transitioning into start of level
+-- transitioning into start of level
 function transition()
 	for i = 64, 1, -5 do
 		transitionbox = {vec2(0, 0), vec2(i, 64)}
@@ -1487,7 +1497,7 @@ function transition()
 	player.movable = true
 end
 
--- Drawing the actual transition
+-- drawing the actual transition
 function drawtransition()
 	if transitionbox != nil then
 		rectfill(cam.pos.x + transitionbox[1].x,
@@ -1498,15 +1508,12 @@ function drawtransition()
 end
 
 function getsendy()
-	local cx = cam.pos.x
-	local cy = cam.pos.y
-	local sinvals = {}
+	local cx, cy, sinvals = cam.pos.x, cam.pos.y, {}
 	for i = 1, #"let's get sendy" + 1, 1 do
 		add(sinvals, flr(sin(time()-i/8)*-1.5))
 		circfill(cx+i*4-2, cy+12+sinvals[i], 5, 7)
 	end
 	for i = 1, #"let's get sendy", 1	do
-		--local sinval = flr(sin(time()-i/8)*-1.5)
 		?sub("let's get sendy!",i,i), cx+i*4-2,cy+10+sinvals[i],1
 	end
 	if (formatted_time != nil) then
