@@ -48,8 +48,7 @@ function init_menu()
 	level_arrow = c_arrow:new({ pos = vec2(6, 18) })
 	music_arrows = c_arrow_pair:new({ pos = vec2(0, 34) })
 	credits_arrow = c_arrow:new({ pos = vec2(6, 48) })
-	_update = update_menu
-	_draw = draw_menu
+	_update, _draw = update_menu, draw_menu
 end
 
 function update_menu()
@@ -71,8 +70,7 @@ function update_menu()
 		if selected_index == 1 then
 			init_level_select()
 		elseif selected_index == 3 then
-			_draw = draw_credits
-			_update = update_credits
+			_update, _draw = update_credits, draw_credits
 		end
 	end
 
@@ -116,8 +114,7 @@ function init_level_select()
 		end
 	})
 
-	_draw = draw_level_select
-	_update = update_level_select
+	_update, _draw = update_level_select, draw_level_select
 end
 
 function draw_level_select()
@@ -164,7 +161,6 @@ end
 
 function update_credits()
 	if btnp(4) or btnp(5) then
-		_update = update_menu
-		_draw = draw_menu
+		_update, _draw = update_menu, draw_menu
 	end
 end

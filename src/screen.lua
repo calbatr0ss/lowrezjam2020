@@ -6,8 +6,7 @@ function init_screen()
 	--_update = splash_update
 	-- _draw = splash_draw
 	-- _update = splash_update
-		_update = update_screen
-		_draw = draw_screen
+		_update, _draw = update_screen, draw_screen
 end
 
 function update_screen()
