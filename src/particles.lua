@@ -28,7 +28,7 @@ c_particle = {
 		--self.p = self.p + (self.v * self.dt)
 		self.p = self.p + (self.v * self.dt)
 		self.calculateforces(self)
-		-- dampening coef makes results less accurate. Res is 64x64 tho so who cares.
+		-- dampening coef makes results less accurate. res is 64x64 tho so who cares.
 		self.v = self.v + (self.f / self.m * self.dt) - (self.v * self.damp*self.dt)
 		return self
 	end,
@@ -65,7 +65,7 @@ s_particle = c_particle:new({
   end--]]
 })
 
--- Reduce the size of this later?
+-- reduce the size of this later?
 smokepuff = s_particle:new({
 	sprites = {51, 52, 53, 54},
 	flip = false,
@@ -114,8 +114,8 @@ function solveparticles()
 	end
 end
 
--- A singular spring strut
--- Shorten the amount of code here later
+-- a singular spring strut
+-- shorten the amount of code here later
 c_strut = {
 	ends = nil,
 	ideal = 0,
@@ -175,7 +175,7 @@ rope = {
 	solve = function(self)
 		self.time = 0
 		local struts, send1, send2 = self.struts, {}, {}
-		-- Positions need to be set first, and endpoint v needs to be 0
+		-- positions need to be set first, and endpoint v needs to be 0
 		for i = 1, #struts do
 			send1, send2 = struts[i].ends[1], struts[i].ends[2]
 			-- send1.lastpos = send1.p

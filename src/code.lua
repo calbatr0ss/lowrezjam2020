@@ -137,7 +137,7 @@ c_state = {
 			}
 		}
 	},
-	--Why do we use o.states.default instead of self.states.default (157)
+	--why do we use o.states.default instead of self.states.default (157)
 	new = function(self, o)
 		local o = o or {}
 		setmetatable(o, self)
@@ -973,7 +973,7 @@ c_hud = c_object:new({
 	end,
 	shakebar = function(self)
 		self.baro = vec2(0, 0)
-		--See note above
+		--see note above
 		sfx(7, -2)
 		sfx(7, -1, 0, 12)
 		shakeb = cocreate(sinxshake)
@@ -1304,7 +1304,7 @@ end
 
 function draw_level()
 	clip(cam.x, cam.y, 64, 64)
-	-- Draw the background leaves based on camera position
+	-- draw the background leaves based on camera position
 	for x = 0, 8 do
 		for y = 0, 8 do
 			local camo = vec2(cam.pos.x %8 + 8, cam.pos.y %8 + 8)
