@@ -1778,13 +1778,12 @@ end
 function draw_credits()
 	cls()
 	draw_bg(0, 0, 21)
-	rectfill(0, 5, 64, 26, 15)
-	rectfill(0, 36, 64, 55, 15)
-	?"a hot beans game:", 0, 5, 1
-	?"cal moody", 14, 13, 1
-	?"reagan burke", 9, 20, 1
-	?"special thanks:", 3, 40, 1
-	?"pico-grunt", 13, 48, 1
+	?"a hot beans game", center_text("a hot beans game"), 8, 1
+	?"cal moody", center_text("cal moody"), 16, 1
+	?"reagan burke", center_text("reagan burke"), 24, 1
+	?"lowrezjam 2020", center_text("lowrezjam 2020"), 40, 1
+	?"thanks for", center_text("thanks for"), 48, 1
+	?"playing!", center_text("playing!"), 56, 1
 end
 
 function update_credits()
